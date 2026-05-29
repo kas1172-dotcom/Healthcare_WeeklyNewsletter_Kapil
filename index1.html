@@ -1,0 +1,579 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,"system-ui");background:transparent;color:var(--color-text-primary)}
+.app{max-width:900px;margin:0 auto;padding:1rem 0 2rem}
+h1{font-size:20px;font-weight:500;margin-bottom:2px}
+.subtitle{font-size:13px;color:var(--color-text-secondary);margin-bottom:16px}
+.api-bar{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+.api-bar input{flex:1;height:36px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary)}
+.api-bar input:focus{outline:none;border-color:var(--color-border-primary)}
+.btn{height:36px;padding:0 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+.btn:hover{background:var(--color-background-secondary)}
+.btn:active{transform:scale(0.98)}
+.btn.primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+.btn.primary:hover{opacity:0.85}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.tabs{display:flex;gap:2px;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:16px}
+.tab{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--color-text-secondary);transition:all 0.15s}
+.tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary)}
+.tab:hover:not(.active){color:var(--color-text-primary)}
+.source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px;margin-bottom:14px}
+.source-chip{display:flex;align-items:center;gap:6px;padding:6px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;background:var(--color-background-primary);transition:all 0.15s;user-select:none}
+.source-chip.on{border-color:var(--color-border-info);background:var(--color-background-info);color:var(--color-text-info)}
+.source-chip:hover{border-color:var(--color-border-secondary)}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.controls select{height:34px;padding:0 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px}
+.progress-bar{height:3px;background:var(--color-border-tertiary);border-radius:2px;margin-bottom:12px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:var(--color-text-info);border-radius:2px;transition:width 0.3s}
+.status{font-size:12px;color:var(--color-text-secondary);margin-bottom:10px;min-height:18px}
+.cat-section{margin-bottom:20px}
+.cat-header{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-tertiary);padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.cat-count{font-weight:400;font-size:11px}
+.item{padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:grid;grid-template-columns:1fr auto;gap:8px}
+.item:last-child{border-bottom:none}
+.item-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px;line-height:1.4}
+.item-title a{color:inherit;text-decoration:none}
+.item-title a:hover{text-decoration:underline}
+.item-meta{font-size:11px;color:var(--color-text-tertiary);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.item-summary{font-size:12px;color:var(--color-text-secondary);line-height:1.6;margin-top:4px}
+.badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:100px;white-space:nowrap;align-self:start;margin-top:2px}
+.urg-routine{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.urg-important{background:var(--color-background-warning);color:var(--color-text-warning)}
+.urg-urgent{background:var(--color-background-danger);color:var(--color-text-danger)}
+.empty{text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px}
+.newsletter-preview{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-top:16px;font-size:13px;white-space:pre-wrap;line-height:1.7;color:var(--color-text-primary);max-height:600px;overflow-y:auto}
+.section-label{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:8px}
+.error{background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-md);padding:10px 14px;font-size:12px;color:var(--color-text-danger);margin-bottom:10px}
+.copy-row{display:flex;justify-content:flex-end;gap:6px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Healthcare Regulatory & Policy Monitor</h1>
+  <p class="subtitle">Weekly newsletter pilot — pulls live federal sources, classifies with Claude</p>
+
+  <div class="api-bar">
+    <input type="password" id="apiKey" placeholder="Paste your Anthropic API key (sk-ant-...)">
+    <button class="btn" onclick="saveKey()">Save key</button>
+  </div>
+  <div id="keyStatus" class="status"></div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('regulatory',this)">⚖️ Regulatory</div>
+    <div class="tab" onclick="switchTab('policy',this)">🏛️ Policy</div>
+    <div class="tab" onclick="switchTab('newsletter',this)">📄 Newsletter Draft</div>
+  </div>
+
+  <!-- REGULATORY TAB -->
+  <div id="tab-regulatory">
+    <p class="section-label">Sources</p>
+    <div class="source-grid" id="reg-sources"></div>
+    <div class="controls">
+      <select id="reg-days">
+        <option value="7">Last 7 days</option>
+        <option value="14">Last 14 days</option>
+        <option value="30">Last 30 days</option>
+      </select>
+      <button class="btn primary" onclick="runRegulatory()">Fetch & Classify</button>
+      <button class="btn" onclick="clearResults('reg')">Clear</button>
+    </div>
+    <div class="progress-bar" id="reg-progress"><div class="progress-fill" id="reg-fill"></div></div>
+    <div class="status" id="reg-status"></div>
+    <div id="reg-error"></div>
+    <div id="reg-results"></div>
+  </div>
+
+  <!-- POLICY TAB -->
+  <div id="tab-policy" style="display:none">
+    <p class="section-label">Sources</p>
+    <div class="source-grid" id="pol-sources"></div>
+    <div class="controls">
+      <select id="pol-days">
+        <option value="7">Last 7 days</option>
+        <option value="14">Last 14 days</option>
+        <option value="30">Last 30 days</option>
+      </select>
+      <button class="btn primary" onclick="runPolicy()">Fetch & Classify</button>
+      <button class="btn" onclick="clearResults('pol')">Clear</button>
+    </div>
+    <div class="progress-bar" id="pol-progress"><div class="progress-fill" id="pol-fill"></div></div>
+    <div class="status" id="pol-status"></div>
+    <div id="pol-error"></div>
+    <div id="pol-results"></div>
+  </div>
+
+  <!-- NEWSLETTER TAB -->
+  <div id="tab-newsletter" style="display:none">
+    <p class="section-label">Generate newsletter draft from fetched articles</p>
+    <div class="controls">
+      <button class="btn primary" onclick="generateNewsletter()">Generate Draft</button>
+      <button class="btn" onclick="copyNewsletter()">Copy text</button>
+    </div>
+    <div class="status" id="nl-status"></div>
+    <div id="nl-error"></div>
+    <div id="nl-output"></div>
+  </div>
+</div>
+
+<script>
+const CORS = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+const REG_SOURCES = [
+  {id:'fed_reg', label:'Federal Register', color:'#378ADD', enabled:true,
+   fetch: fetchFederalRegister},
+  {id:'oig', label:'OIG HHS', color:'#534AB7', enabled:true,
+   rss:'https://oig.hhs.gov/rss/whatsnew.xml'},
+  {id:'cms_news', label:'CMS Newsroom', color:'#1D9E75', enabled:true,
+   rss:'https://www.cms.gov/newsroom/rss/resources'},
+  {id:'hhs_ocr', label:'HHS OCR (HIPAA)', color:'#D85A30', enabled:true,
+   rss:'https://www.hhs.gov/rss/hipaa-news.xml'},
+  {id:'ftc', label:'FTC Health', color:'#BA7517', enabled:false,
+   rss:'https://www.ftc.gov/feeds/press-release-rss.xml'},
+  {id:'fda', label:'FDA Press', color:'#993C1D', enabled:true,
+   rss:'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml'},
+];
+
+const POL_SOURCES = [
+  {id:'kff', label:'KFF', color:'#534AB7', enabled:true,
+   rss:'https://kff.org/feed/'},
+  {id:'health_affairs', label:'Health Affairs', color:'#1D9E75', enabled:true,
+   rss:'https://www.healthaffairs.org/action/showFeed?type=etoc&feed=rss&jc=hlthaff'},
+  {id:'cbo', label:'CBO Health', color:'#378ADD', enabled:true,
+   rss:'https://www.cbo.gov/publications/recent/rss.xml'},
+  {id:'medpac', label:'MedPAC', color:'#D85A30', enabled:true,
+   fetch: fetchMedPAC},
+  {id:'commonwealth', label:'Commonwealth Fund', color:'#639922', enabled:true,
+   rss:'https://www.commonwealthfund.org/rss.xml'},
+  {id:'rand_health', label:'RAND Health', color:'#BA7517', enabled:false,
+   rss:'https://www.rand.org/topics/health-care.xml'},
+  {id:'stat_news', label:'STAT News', color:'#888780', enabled:true,
+   rss:'https://www.statnews.com/feed/'},
+  {id:'congress', label:'Congress.gov (Bills)', color:'#7F77DD', enabled:true,
+   fetch: fetchCongressBills},
+];
+
+const REG_CATEGORIES = [
+  'Compliance & Enforcement',
+  'Medicare & Medicaid Policy',
+  'Medical Coding / Billing / RCM',
+  'HIPAA, Privacy & Cybersecurity',
+  'Life Sciences, Pharma & Devices',
+  'AI, Digital Health & Health IT',
+  'Telehealth & Virtual Care',
+  'Payer, Market Access & Value-Based Care',
+  'Behavioral Health & Substance Use',
+  'Hospital & Post-Acute Care',
+  'Healthcare M&A & Antitrust',
+  'Other',
+];
+
+const POL_CATEGORIES = [
+  'Federal Legislation & Congressional Activity',
+  'Medicare & Medicaid Payment Reform',
+  'Value-Based Care & APM Policy',
+  'Health Equity, SDOH & Access',
+  'Drug Pricing & Pharmaceutical Policy',
+  'Healthcare Workforce Policy',
+  'Budget, Spending & Appropriations',
+  'Research & Evidence (Think Tanks)',
+  'Other',
+];
+
+let apiKey = '';
+let regItems = [];
+let polItems = [];
+
+function saveKey() {
+  const v = document.getElementById('apiKey').value.trim();
+  if (!v.startsWith('sk-ant-')) {
+    document.getElementById('keyStatus').textContent = '⚠ Key should start with sk-ant-';
+    return;
+  }
+  apiKey = v;
+  document.getElementById('keyStatus').textContent = '✓ Key saved for this session';
+}
+
+function switchTab(name, el) {
+  ['regulatory','policy','newsletter'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function buildSourceChips(sources, containerId) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  sources.forEach(s => {
+    const chip = document.createElement('div');
+    chip.className = 'source-chip' + (s.enabled ? ' on' : '');
+    chip.innerHTML = `<span class="dot" style="background:${s.color}"></span>${s.label}`;
+    chip.onclick = () => { s.enabled = !s.enabled; chip.className = 'source-chip'+(s.enabled?' on':''); };
+    c.appendChild(chip);
+  });
+}
+
+buildSourceChips(REG_SOURCES, 'reg-sources');
+buildSourceChips(POL_SOURCES, 'pol-sources');
+
+function setProgress(prefix, pct) {
+  const bar = document.getElementById(prefix+'-progress');
+  bar.style.display = 'block';
+  document.getElementById(prefix+'-fill').style.width = pct+'%';
+  if (pct >= 100) setTimeout(() => bar.style.display = 'none', 800);
+}
+
+function setStatus(prefix, msg) {
+  document.getElementById(prefix+'-status').textContent = msg;
+}
+
+function showError(prefix, msg) {
+  document.getElementById(prefix+'-error').innerHTML =
+    msg ? `<div class="error">${msg}</div>` : '';
+}
+
+async function fetchRSS(url) {
+  const r = await fetch(CORS + encodeURIComponent(url));
+  const d = await r.json();
+  if (d.status !== 'ok') return [];
+  return (d.items || []).map(i => ({
+    title: i.title,
+    url: i.link || i.guid,
+    published: i.pubDate ? new Date(i.pubDate) : new Date(),
+    source: d.feed?.title || '',
+    snippet: stripHtml(i.description || i.content || '').slice(0, 400),
+  }));
+}
+
+function stripHtml(html) {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+async function fetchFederalRegister(days) {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const dateStr = since.toISOString().slice(0,10);
+  const agencies = ['centers-for-medicare-medicaid-services','health-and-human-services-department',
+    'food-and-drug-administration','drug-enforcement-administration',
+    'office-for-civil-rights-hhs','federal-trade-commission',
+    'office-of-the-national-coordinator-for-health-information-technology'];
+  const agencyQ = agencies.map(a=>`agency_slugs[]=${a}`).join('&');
+  const url = `https://www.federalregister.gov/api/v1/documents.json?per_page=40&order=newest&${agencyQ}&conditions[publication_date][gte]=${dateStr}&conditions[type][]=RULE&conditions[type][]=PRORULE&conditions[type][]=NOTICE&fields[]=title&fields[]=abstract&fields[]=publication_date&fields[]=html_url&fields[]=agencies&fields[]=type`;
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    return (d.results || []).map(i => ({
+      title: i.title,
+      url: i.html_url,
+      published: new Date(i.publication_date),
+      source: 'Federal Register — ' + (i.agencies?.[0]?.name || ''),
+      snippet: (i.abstract || '').slice(0, 400),
+      docType: i.type,
+    }));
+  } catch(e) { return []; }
+}
+
+async function fetchMedPAC() {
+  // MedPAC doesn't have a reliable RSS; use their publications page via rss2json
+  try {
+    const items = await fetchRSS('https://www.medpac.gov/feed/');
+    return items;
+  } catch(e) { return []; }
+}
+
+async function fetchCongressBills(days) {
+  // Congress.gov API - free with key from api.congress.gov; fall back to RSS
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const fromDate = since.toISOString().slice(0,10)+'T00:00:00Z';
+    const url = `https://api.congress.gov/v3/bill?format=json&limit=20&fromDateTime=${fromDate}&sort=updateDate+desc&api_key=DEMO_KEY`;
+    const r = await fetch(url);
+    const d = await r.json();
+    return ((d.bills || [])).filter(b => {
+      const title = (b.title||'').toLowerCase();
+      return title.includes('health') || title.includes('medicare') ||
+             title.includes('medicaid') || title.includes('drug') ||
+             title.includes('hospital') || title.includes('patient') ||
+             title.includes('coverage') || title.includes('care');
+    }).map(b => ({
+      title: b.title,
+      url: b.url || `https://www.congress.gov/bill/${b.congress}th-congress/${b.type?.toLowerCase()}-bill/${b.number}`,
+      published: new Date(b.updateDate || b.introducedDate || Date.now()),
+      source: `Congress.gov — ${b.type} ${b.number} (${b.congress}th)`,
+      snippet: `Sponsor: ${b.sponsors?.[0]?.fullName || 'N/A'} | Latest action: ${b.latestAction?.text || 'N/A'}`,
+    }));
+  } catch(e) { return []; }
+}
+
+async function classifyItems(items, categories, prefix) {
+  if (!apiKey) { showError(prefix, 'Please save your Anthropic API key first.'); return []; }
+  const BATCH = 6;
+  const results = [];
+  for (let i = 0; i < items.length; i += BATCH) {
+    const batch = items.slice(i, i + BATCH);
+    const prompt = `You are a healthcare regulatory analyst. Classify each article below.
+
+Categories: ${categories.join(' | ')}
+
+For each article, return ONLY a JSON array (no markdown) with objects:
+{ "idx": <number>, "category": "<exact category string>", "urgency": "routine"|"important"|"urgent", "summary": "<2 sentence plain English summary>" }
+
+Articles:
+${batch.map((it,j) => `[${i+j}] TITLE: ${it.title}\nSOURCE: ${it.source}\nSNIPPET: ${it.snippet}`).join('\n\n')}`;
+
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+        body: JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:1500,
+          messages:[{role:'user',content:prompt}]
+        })
+      });
+      const data = await resp.json();
+      if (data.error) { showError(prefix, `Claude API error: ${data.error.message}`); break; }
+      const text = data.content?.[0]?.text || '[]';
+      const clean = text.replace(/```json|```/g,'').trim();
+      const parsed = JSON.parse(clean);
+      parsed.forEach(p => {
+        if (items[p.idx]) results[p.idx] = {...items[p.idx], ...p};
+      });
+    } catch(e) {
+      // fallback: no classification
+      batch.forEach((it,j) => { results[i+j] = {...it, category:'Other', urgency:'routine', summary:it.snippet}; });
+    }
+    setProgress(prefix, Math.min(95, ((i+BATCH)/items.length)*80+20));
+    await new Promise(r => setTimeout(r,400));
+  }
+  return results.filter(Boolean);
+}
+
+function renderResults(items, categories, containerId) {
+  const grouped = {};
+  categories.forEach(c => grouped[c] = []);
+  items.forEach(it => {
+    const cat = grouped[it.category] ? it.category : 'Other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(it);
+  });
+
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+
+  let hasAny = false;
+  categories.forEach(cat => {
+    const arr = grouped[cat];
+    if (!arr || arr.length === 0) return;
+    hasAny = true;
+    const section = document.createElement('div');
+    section.className = 'cat-section';
+    section.innerHTML = `<div class="cat-header">${cat}<span class="cat-count">${arr.length} item${arr.length!==1?'s':''}</span></div>`;
+    arr.sort((a,b) => {
+      const u = {urgent:0,important:1,routine:2};
+      return (u[a.urgency]||2)-(u[b.urgency]||2);
+    }).forEach(it => {
+      const d = it.published ? it.published.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+      const urg = it.urgency || 'routine';
+      const urgLabel = {urgent:'🔴 Urgent',important:'🟡 Important',routine:'Routine'}[urg] || 'Routine';
+      const urgClass = 'badge urg-'+urg;
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `
+        <div>
+          <div class="item-title"><a href="${it.url||'#'}" target="_blank" rel="noopener">${it.title}</a></div>
+          <div class="item-meta">
+            <span>${it.source||''}</span>
+            ${d?`<span>${d}</span>`:''}
+            ${it.docType?`<span>${it.docType}</span>`:''}
+          </div>
+          ${it.summary?`<div class="item-summary">${it.summary}</div>`:''}
+        </div>
+        <span class="${urgClass}">${urgLabel}</span>`;
+      section.appendChild(row);
+    });
+    container.appendChild(section);
+  });
+
+  if (!hasAny) container.innerHTML = '<div class="empty">No items found. Try extending the date range or checking your sources.</div>';
+}
+
+async function runRegulatory() {
+  const days = parseInt(document.getElementById('reg-days').value);
+  const enabled = REG_SOURCES.filter(s => s.enabled);
+  if (!enabled.length) { showError('reg','Select at least one source.'); return; }
+  showError('reg','');
+  document.getElementById('reg-results').innerHTML = '';
+  setProgress('reg', 5);
+  setStatus('reg', 'Fetching sources...');
+
+  let raw = [];
+  const cutoff = daysAgo(days);
+  for (let i=0; i<enabled.length; i++) {
+    const src = enabled[i];
+    setStatus('reg', `Fetching ${src.label}...`);
+    setProgress('reg', 5 + (i/enabled.length)*15);
+    try {
+      let items = [];
+      if (src.fetch) items = await src.fetch(days);
+      else if (src.rss) items = await fetchRSS(src.rss);
+      items = items.filter(it => it.published >= cutoff);
+      items.forEach(it => it.sourceId = src.id);
+      raw.push(...items);
+    } catch(e) {}
+  }
+
+  if (!raw.length) {
+    setStatus('reg',''); setProgress('reg',100);
+    document.getElementById('reg-results').innerHTML = '<div class="empty">No articles found in this date range.</div>';
+    return;
+  }
+
+  raw = raw.slice(0, 60);
+  setStatus('reg', `Classifying ${raw.length} articles with Claude...`);
+  const classified = await classifyItems(raw, REG_CATEGORIES, 'reg');
+  regItems = classified;
+  setProgress('reg', 100);
+  setStatus('reg', `✓ ${classified.length} articles classified`);
+  renderResults(classified, REG_CATEGORIES, 'reg-results');
+}
+
+async function runPolicy() {
+  const days = parseInt(document.getElementById('pol-days').value);
+  const enabled = POL_SOURCES.filter(s => s.enabled);
+  if (!enabled.length) { showError('pol','Select at least one source.'); return; }
+  showError('pol','');
+  document.getElementById('pol-results').innerHTML = '';
+  setProgress('pol', 5);
+  setStatus('pol', 'Fetching sources...');
+
+  let raw = [];
+  const cutoff = daysAgo(days);
+  for (let i=0; i<enabled.length; i++) {
+    const src = enabled[i];
+    setStatus('pol', `Fetching ${src.label}...`);
+    setProgress('pol', 5 + (i/enabled.length)*15);
+    try {
+      let items = [];
+      if (src.fetch) items = await src.fetch(days);
+      else if (src.rss) items = await fetchRSS(src.rss);
+      items = items.filter(it => it.published >= cutoff);
+      items.forEach(it => it.sourceId = src.id);
+      raw.push(...items);
+    } catch(e) {}
+  }
+
+  if (!raw.length) {
+    setStatus('pol',''); setProgress('pol',100);
+    document.getElementById('pol-results').innerHTML = '<div class="empty">No articles found in this date range.</div>';
+    return;
+  }
+
+  raw = raw.slice(0, 60);
+  setStatus('pol', `Classifying ${raw.length} articles with Claude...`);
+  const classified = await classifyItems(raw, POL_CATEGORIES, 'pol');
+  polItems = classified;
+  setProgress('pol', 100);
+  setStatus('pol', `✓ ${classified.length} articles classified`);
+  renderResults(classified, POL_CATEGORIES, 'pol-results');
+}
+
+async function generateNewsletter() {
+  if (!apiKey) { showError('nl','Please save your Anthropic API key first.'); return; }
+  const allItems = [...regItems, ...polItems];
+  if (!allItems.length) {
+    showError('nl','Fetch articles from the Regulatory and/or Policy tabs first.');
+    return;
+  }
+  showError('nl','');
+  setStatus('nl','Generating newsletter draft...');
+  document.getElementById('nl-output').innerHTML = '';
+
+  const today = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const urgent = allItems.filter(i=>i.urgency==='urgent');
+  const important = allItems.filter(i=>i.urgency==='important');
+
+  const regSummary = regItems.slice(0,20).map(i=>`[${i.category}] ${i.title} — ${i.summary||''}`).join('\n');
+  const polSummary = polItems.slice(0,15).map(i=>`[${i.category}] ${i.title} — ${i.summary||''}`).join('\n');
+
+  const prompt = `You are a healthcare regulatory and policy analyst writing a professional weekly newsletter for healthcare compliance, strategy, and policy professionals.
+
+Write a weekly newsletter draft for the week of ${today}.
+
+Tone: Authoritative but readable. Write like a sharp analyst, not a press release. No fluff. Use plain language. Each section intro should be 1–2 sentences of context, not just a restatement of the headline.
+
+Structure the newsletter EXACTLY as follows:
+1. Subject line (compelling, specific)
+2. Brief editor's note (2-3 sentences on the week's big themes)
+3. 🚨 This Week's Priority Items (only if urgency=urgent items exist — list top 3 max)
+4. ⚖️ Regulatory Roundup (group by category, 3-5 bullet items each, include source)
+5. 🏛️ Policy Watch (group by category, 3-5 bullet items each, include source)
+6. 📋 Comment Periods Open / Action Deadlines (pull proposed rules from regulatory items)
+7. One-line closing note
+
+REGULATORY ARTICLES:
+${regSummary || '(none fetched yet)'}
+
+POLICY ARTICLES:
+${polSummary || '(none fetched yet)'}
+
+Write the full newsletter now. Use bullet points within sections. Keep the whole thing under 800 words.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1800,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) { showError('nl',`Claude API error: ${data.error.message}`); return; }
+    const text = data.content?.[0]?.text || '';
+    setStatus('nl','✓ Draft generated');
+    document.getElementById('nl-output').innerHTML = `<div class="newsletter-preview">${escHtml(text)}</div>`;
+  } catch(e) {
+    showError('nl','Network error generating draft. Check your API key and connection.');
+    setStatus('nl','');
+  }
+}
+
+function copyNewsletter() {
+  const el = document.querySelector('.newsletter-preview');
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(()=>btn.textContent='Copy text',1500);
+  });
+}
+
+function clearResults(prefix) {
+  document.getElementById(prefix+'-results').innerHTML = '';
+  document.getElementById(prefix+'-status').textContent = '';
+  showError(prefix,'');
+  if (prefix==='reg') regItems = [];
+  if (prefix==='pol') polItems = [];
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
