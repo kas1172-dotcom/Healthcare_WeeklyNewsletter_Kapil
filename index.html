@@ -1,579 +1,755 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthPulse Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans,"system-ui");background:transparent;color:var(--color-text-primary)}
-.app{max-width:900px;margin:0 auto;padding:1rem 0 2rem}
-h1{font-size:20px;font-weight:500;margin-bottom:2px}
-.subtitle{font-size:13px;color:var(--color-text-secondary);margin-bottom:16px}
-.api-bar{display:flex;gap:8px;margin-bottom:16px;align-items:center}
-.api-bar input{flex:1;height:36px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary)}
-.api-bar input:focus{outline:none;border-color:var(--color-border-primary)}
-.btn{height:36px;padding:0 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;cursor:pointer;white-space:nowrap;transition:background 0.15s}
-.btn:hover{background:var(--color-background-secondary)}
-.btn:active{transform:scale(0.98)}
-.btn.primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
-.btn.primary:hover{opacity:0.85}
-.btn:disabled{opacity:0.4;cursor:not-allowed}
-.tabs{display:flex;gap:2px;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:16px}
-.tab{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--color-text-secondary);transition:all 0.15s}
-.tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary)}
-.tab:hover:not(.active){color:var(--color-text-primary)}
-.source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px;margin-bottom:14px}
-.source-chip{display:flex;align-items:center;gap:6px;padding:6px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;background:var(--color-background-primary);transition:all 0.15s;user-select:none}
-.source-chip.on{border-color:var(--color-border-info);background:var(--color-background-info);color:var(--color-text-info)}
-.source-chip:hover{border-color:var(--color-border-secondary)}
-.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-.controls select{height:34px;padding:0 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px}
-.progress-bar{height:3px;background:var(--color-border-tertiary);border-radius:2px;margin-bottom:12px;overflow:hidden;display:none}
-.progress-fill{height:100%;background:var(--color-text-info);border-radius:2px;transition:width 0.3s}
-.status{font-size:12px;color:var(--color-text-secondary);margin-bottom:10px;min-height:18px}
-.cat-section{margin-bottom:20px}
-.cat-header{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-tertiary);padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
-.cat-count{font-weight:400;font-size:11px}
-.item{padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:grid;grid-template-columns:1fr auto;gap:8px}
-.item:last-child{border-bottom:none}
-.item-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px;line-height:1.4}
-.item-title a{color:inherit;text-decoration:none}
-.item-title a:hover{text-decoration:underline}
-.item-meta{font-size:11px;color:var(--color-text-tertiary);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-.item-summary{font-size:12px;color:var(--color-text-secondary);line-height:1.6;margin-top:4px}
-.badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:100px;white-space:nowrap;align-self:start;margin-top:2px}
-.urg-routine{background:var(--color-background-secondary);color:var(--color-text-secondary)}
-.urg-important{background:var(--color-background-warning);color:var(--color-text-warning)}
-.urg-urgent{background:var(--color-background-danger);color:var(--color-text-danger)}
-.empty{text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px}
-.newsletter-preview{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-top:16px;font-size:13px;white-space:pre-wrap;line-height:1.7;color:var(--color-text-primary);max-height:600px;overflow-y:auto}
-.section-label{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:8px}
-.error{background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-md);padding:10px 14px;font-size:12px;color:var(--color-text-danger);margin-bottom:10px}
-.copy-row{display:flex;justify-content:flex-end;gap:6px;margin-top:8px}
+/* ── RESET & BASE ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #F7F6F3;
+  color: #1A1A1A;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── MASTHEAD ───────────────────────────────────────────────── */
+.masthead {
+  background: #0C1A2E;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+.masthead-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  background: #0D9488;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.brand-mark svg { width: 18px; height: 18px; }
+.brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.brand-name span {
+  color: #0D9488;
+  font-weight: 400;
+}
+.edition-switcher {
+  display: flex;
+  gap: 2px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 3px;
+}
+.edition-btn {
+  height: 34px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255,255,255,0.5);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.edition-btn.active {
+  background: #0D9488;
+  color: #fff;
+}
+.edition-btn:hover:not(.active) { color: rgba(255,255,255,0.85); }
+
+/* ── ISSUE HEADER ───────────────────────────────────────────── */
+.issue-header {
+  background: #0C1A2E;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 48px 24px 40px;
+  text-align: center;
+}
+.issue-meta {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0D9488;
+  margin-bottom: 12px;
+}
+.issue-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  max-width: 760px;
+  margin: 0 auto 16px;
+  letter-spacing: -0.02em;
+}
+.issue-theme {
+  font-size: 15px;
+  color: rgba(255,255,255,0.45);
+  font-style: italic;
+  max-width: 560px;
+  margin: 0 auto 20px;
+}
+.issue-dateline {
+  font-size: 12px;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 0.04em;
+}
+
+/* ── EDITORS NOTE ───────────────────────────────────────────── */
+.editors-note-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.editors-note {
+  background: #fff;
+  border-left: 4px solid #0D9488;
+  border-radius: 0 8px 8px 0;
+  padding: 24px 28px;
+  margin: 32px 0 0;
+  position: relative;
+}
+.en-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0D9488;
+  margin-bottom: 8px;
+}
+.en-text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #2D2D2D;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────── */
+.page-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .page-body { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}
+
+/* ── PRIORITY BANNER ────────────────────────────────────────── */
+.priority-banner {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 28px;
+}
+.pb-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #DC2626;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pb-item {
+  font-size: 13px;
+  color: #7F1D1D;
+  line-height: 1.5;
+  padding: 6px 0;
+  border-bottom: 1px solid #FCA5A5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pb-item:last-child { border-bottom: none; padding-bottom: 0; }
+.pb-item a { color: inherit; text-decoration: none; font-weight: 500; }
+.pb-item a:hover { text-decoration: underline; }
+
+/* ── CATEGORY SECTION ───────────────────────────────────────── */
+.cat-section { margin-bottom: 36px; }
+.cat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #E5E3DC;
+}
+.cat-bar {
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.cat-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1A1A1A;
+  flex: 1;
+}
+.cat-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9C9A94;
+  background: #EDEBE4;
+  padding: 2px 9px;
+  border-radius: 100px;
+}
+
+/* ── ARTICLE CARD ───────────────────────────────────────────── */
+.article-card {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #E8E6DF;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.article-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border-color: #C8C6BF;
+}
+.card-inner {
+  display: flex;
+}
+.urgency-stripe {
+  width: 4px;
+  flex-shrink: 0;
+}
+.urgency-stripe.urgent   { background: #DC2626; }
+.urgency-stripe.important{ background: #D97706; }
+.urgency-stripe.routine  { background: #E8E6DF; }
+.card-body {
+  padding: 14px 18px;
+  flex: 1;
+  min-width: 0;
+}
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.card-headline {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A1A;
+  line-height: 1.4;
+  flex: 1;
+}
+.card-headline a {
+  color: inherit;
+  text-decoration: none;
+}
+.card-headline a:hover { color: #0D9488; }
+.urgency-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.urgency-badge.urgent    { background: #FEF2F2; color: #DC2626; }
+.urgency-badge.important { background: #FFFBEB; color: #D97706; }
+.urgency-badge.routine   { display: none; }
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.source-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 100px;
+  background: #F0EEE7;
+  color: #5C5A54;
+}
+.source-pill a {
+  color: inherit;
+  text-decoration: none;
+}
+.source-pill a:hover { color: #0D9488; }
+.doc-type-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 100px;
+  background: rgba(13,148,136,0.1);
+  color: #0F766E;
+}
+.date-tag {
+  font-size: 10px;
+  color: #9C9A94;
+}
+.card-summary {
+  font-size: 13px;
+  color: #4A4A4A;
+  line-height: 1.65;
+  margin-bottom: 8px;
+}
+.card-implication {
+  font-size: 12px;
+  color: #0F766E;
+  background: rgba(13,148,136,0.07);
+  border-left: 3px solid #0D9488;
+  padding: 6px 10px;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.5;
+}
+.card-implication strong {
+  font-weight: 600;
+}
+.comment-deadline {
+  font-size: 11px;
+  color: #B45309;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────────── */
+.sidebar { position: sticky; top: 76px; }
+.sidebar-card {
+  background: #fff;
+  border: 1px solid #E8E6DF;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.sidebar-header {
+  padding: 12px 16px;
+  background: #0C1A2E;
+}
+.sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+.sidebar-body { padding: 12px 16px; }
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #F0EEE7;
+  font-size: 12px;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: #5C5A54; }
+.stat-val { font-weight: 600; color: #1A1A1A; }
+.comment-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #F0EEE7;
+}
+.comment-item:last-child { border-bottom: none; }
+.comment-item-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1A1A1A;
+  line-height: 1.4;
+  margin-bottom: 3px;
+}
+.comment-item-title a { color: inherit; text-decoration: none; }
+.comment-item-title a:hover { color: #0D9488; }
+.comment-item-date {
+  font-size: 11px;
+  color: #B45309;
+  font-weight: 500;
+}
+.toc-item {
+  padding: 7px 0;
+  border-bottom: 1px solid #F0EEE7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #3D3D3D;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.toc-item:last-child { border-bottom: none; }
+.toc-item:hover { color: #0D9488; }
+.toc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.toc-count { margin-left: auto; font-size: 11px; color: #9C9A94; }
+
+/* ── FOOTER ──────────────────────────────────────────────────── */
+.site-footer {
+  background: #0C1A2E;
+  padding: 32px 24px;
+  text-align: center;
+  margin-top: 40px;
+}
+.footer-brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.footer-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 4px;
+}
+
+/* ── LOADING / ERROR ─────────────────────────────────────────── */
+.loading-screen {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #5C5A54;
+}
+.loader {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #E8E6DF;
+  border-top-color: #0D9488;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-screen {
+  max-width: 480px;
+  margin: 60px auto;
+  text-align: center;
+  padding: 0 24px;
+}
+.error-screen h2 { font-size: 20px; margin-bottom: 8px; color: #DC2626; }
+.error-screen p  { font-size: 14px; color: #5C5A54; line-height: 1.6; }
+.empty-cat {
+  font-size: 13px;
+  color: #9C9A94;
+  font-style: italic;
+  padding: 12px 0;
+}
+
+/* ── UTILITIES ───────────────────────────────────────────────── */
+.hidden { display: none; }
 </style>
 </head>
 <body>
-<div class="app">
-  <h1>Healthcare Regulatory & Policy Monitor</h1>
-  <p class="subtitle">Weekly newsletter pilot — pulls live federal sources, classifies with Claude</p>
 
-  <div class="api-bar">
-    <input type="password" id="apiKey" placeholder="Paste your Anthropic API key (sk-ant-...)">
-    <button class="btn" onclick="saveKey()">Save key</button>
-  </div>
-  <div id="keyStatus" class="status"></div>
-
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('regulatory',this)">⚖️ Regulatory</div>
-    <div class="tab" onclick="switchTab('policy',this)">🏛️ Policy</div>
-    <div class="tab" onclick="switchTab('newsletter',this)">📄 Newsletter Draft</div>
-  </div>
-
-  <!-- REGULATORY TAB -->
-  <div id="tab-regulatory">
-    <p class="section-label">Sources</p>
-    <div class="source-grid" id="reg-sources"></div>
-    <div class="controls">
-      <select id="reg-days">
-        <option value="7">Last 7 days</option>
-        <option value="14">Last 14 days</option>
-        <option value="30">Last 30 days</option>
-      </select>
-      <button class="btn primary" onclick="runRegulatory()">Fetch & Classify</button>
-      <button class="btn" onclick="clearResults('reg')">Clear</button>
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="masthead-inner">
+    <a class="brand" href="#">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 12h6M9 8h6M9 16h4M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/>
+          <circle cx="18" cy="18" r="5" fill="#0D9488" stroke="none"/>
+          <path d="M16 18l1.5 1.5L20 16" stroke="#fff" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <span class="brand-name">HealthPulse <span>Intelligence</span></span>
+    </a>
+    <div class="edition-switcher">
+      <button class="edition-btn active" id="btn-consulting" onclick="switchEdition('consulting')">
+        📊 Consulting Edition
+      </button>
+      <button class="edition-btn" id="btn-policy" onclick="switchEdition('policy')">
+        🏛️ Policy Edition
+      </button>
     </div>
-    <div class="progress-bar" id="reg-progress"><div class="progress-fill" id="reg-fill"></div></div>
-    <div class="status" id="reg-status"></div>
-    <div id="reg-error"></div>
-    <div id="reg-results"></div>
   </div>
+</header>
 
-  <!-- POLICY TAB -->
-  <div id="tab-policy" style="display:none">
-    <p class="section-label">Sources</p>
-    <div class="source-grid" id="pol-sources"></div>
-    <div class="controls">
-      <select id="pol-days">
-        <option value="7">Last 7 days</option>
-        <option value="14">Last 14 days</option>
-        <option value="30">Last 30 days</option>
-      </select>
-      <button class="btn primary" onclick="runPolicy()">Fetch & Classify</button>
-      <button class="btn" onclick="clearResults('pol')">Clear</button>
-    </div>
-    <div class="progress-bar" id="pol-progress"><div class="progress-fill" id="pol-fill"></div></div>
-    <div class="status" id="pol-status"></div>
-    <div id="pol-error"></div>
-    <div id="pol-results"></div>
+<!-- MAIN CONTENT -->
+<main id="main-content">
+  <div class="loading-screen" id="loading">
+    <div class="loader"></div>
+    <p>Loading this week's briefing...</p>
   </div>
+  <div class="error-screen hidden" id="error">
+    <h2>Newsletter not yet generated</h2>
+    <p>Run <code>scraper.py</code> to fetch this week's content and push it to GitHub. The newsletter will appear here automatically once the data file is published.</p>
+  </div>
+  <div id="content" class="hidden"></div>
+</main>
 
-  <!-- NEWSLETTER TAB -->
-  <div id="tab-newsletter" style="display:none">
-    <p class="section-label">Generate newsletter draft from fetched articles</p>
-    <div class="controls">
-      <button class="btn primary" onclick="generateNewsletter()">Generate Draft</button>
-      <button class="btn" onclick="copyNewsletter()">Copy text</button>
-    </div>
-    <div class="status" id="nl-status"></div>
-    <div id="nl-error"></div>
-    <div id="nl-output"></div>
-  </div>
-</div>
+<footer class="site-footer">
+  <div class="footer-brand">HealthPulse Intelligence</div>
+  <div class="footer-sub" id="footer-date"></div>
+  <div class="footer-sub">Regulatory &amp; Policy Briefing · Sources cited from official government and research publications</div>
+</footer>
 
 <script>
-const CORS = 'https://api.rss2json.com/v1/api.json?rss_url=';
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+// Update DATA_URL to point to your newsletter_data.json on GitHub
+// e.g. https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/newsletter_data.json
+// or leave as "./newsletter_data.json" to serve from the same folder
+const DATA_URL = './newsletter_data.json';
 
-const REG_SOURCES = [
-  {id:'fed_reg', label:'Federal Register', color:'#378ADD', enabled:true,
-   fetch: fetchFederalRegister},
-  {id:'oig', label:'OIG HHS', color:'#534AB7', enabled:true,
-   rss:'https://oig.hhs.gov/rss/whatsnew.xml'},
-  {id:'cms_news', label:'CMS Newsroom', color:'#1D9E75', enabled:true,
-   rss:'https://www.cms.gov/newsroom/rss/resources'},
-  {id:'hhs_ocr', label:'HHS OCR (HIPAA)', color:'#D85A30', enabled:true,
-   rss:'https://www.hhs.gov/rss/hipaa-news.xml'},
-  {id:'ftc', label:'FTC Health', color:'#BA7517', enabled:false,
-   rss:'https://www.ftc.gov/feeds/press-release-rss.xml'},
-  {id:'fda', label:'FDA Press', color:'#993C1D', enabled:true,
-   rss:'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml'},
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let newsletterData = null;
+let currentEdition = 'consulting';
+
+// Category colors — maps to a teal/navy palette
+const CAT_COLORS = [
+  '#0D9488','#0F766E','#0891B2','#0E7490','#7C3AED',
+  '#6D28D9','#B45309','#92400E','#DC2626','#9F1239',
+  '#064E3B','#1E40AF',
 ];
 
-const POL_SOURCES = [
-  {id:'kff', label:'KFF', color:'#534AB7', enabled:true,
-   rss:'https://kff.org/feed/'},
-  {id:'health_affairs', label:'Health Affairs', color:'#1D9E75', enabled:true,
-   rss:'https://www.healthaffairs.org/action/showFeed?type=etoc&feed=rss&jc=hlthaff'},
-  {id:'cbo', label:'CBO Health', color:'#378ADD', enabled:true,
-   rss:'https://www.cbo.gov/publications/recent/rss.xml'},
-  {id:'medpac', label:'MedPAC', color:'#D85A30', enabled:true,
-   fetch: fetchMedPAC},
-  {id:'commonwealth', label:'Commonwealth Fund', color:'#639922', enabled:true,
-   rss:'https://www.commonwealthfund.org/rss.xml'},
-  {id:'rand_health', label:'RAND Health', color:'#BA7517', enabled:false,
-   rss:'https://www.rand.org/topics/health-care.xml'},
-  {id:'stat_news', label:'STAT News', color:'#888780', enabled:true,
-   rss:'https://www.statnews.com/feed/'},
-  {id:'congress', label:'Congress.gov (Bills)', color:'#7F77DD', enabled:true,
-   fetch: fetchCongressBills},
-];
-
-const REG_CATEGORIES = [
-  'Compliance & Enforcement',
-  'Medicare & Medicaid Policy',
-  'Medical Coding / Billing / RCM',
-  'HIPAA, Privacy & Cybersecurity',
-  'Life Sciences, Pharma & Devices',
-  'AI, Digital Health & Health IT',
-  'Telehealth & Virtual Care',
-  'Payer, Market Access & Value-Based Care',
-  'Behavioral Health & Substance Use',
-  'Hospital & Post-Acute Care',
-  'Healthcare M&A & Antitrust',
-  'Other',
-];
-
-const POL_CATEGORIES = [
-  'Federal Legislation & Congressional Activity',
-  'Medicare & Medicaid Payment Reform',
-  'Value-Based Care & APM Policy',
-  'Health Equity, SDOH & Access',
-  'Drug Pricing & Pharmaceutical Policy',
-  'Healthcare Workforce Policy',
-  'Budget, Spending & Appropriations',
-  'Research & Evidence (Think Tanks)',
-  'Other',
-];
-
-let apiKey = '';
-let regItems = [];
-let polItems = [];
-
-function saveKey() {
-  const v = document.getElementById('apiKey').value.trim();
-  if (!v.startsWith('sk-ant-')) {
-    document.getElementById('keyStatus').textContent = '⚠ Key should start with sk-ant-';
-    return;
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const r = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!r.ok) throw new Error('Data file not found');
+    newsletterData = await r.json();
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('content').classList.remove('hidden');
+    renderEdition(currentEdition);
+  } catch (e) {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('error').classList.remove('hidden');
   }
-  apiKey = v;
-  document.getElementById('keyStatus').textContent = '✓ Key saved for this session';
 }
 
-function switchTab(name, el) {
-  ['regulatory','policy','newsletter'].forEach(t => {
-    document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
-  });
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
+function switchEdition(ed) {
+  currentEdition = ed;
+  document.getElementById('btn-consulting').classList.toggle('active', ed === 'consulting');
+  document.getElementById('btn-policy').classList.toggle('active', ed === 'policy');
+  renderEdition(ed);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function buildSourceChips(sources, containerId) {
-  const c = document.getElementById(containerId);
-  c.innerHTML = '';
-  sources.forEach(s => {
-    const chip = document.createElement('div');
-    chip.className = 'source-chip' + (s.enabled ? ' on' : '');
-    chip.innerHTML = `<span class="dot" style="background:${s.color}"></span>${s.label}`;
-    chip.onclick = () => { s.enabled = !s.enabled; chip.className = 'source-chip'+(s.enabled?' on':''); };
-    c.appendChild(chip);
-  });
-}
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderEdition(ed) {
+  const data = newsletterData[ed];
+  if (!data) return;
 
-buildSourceChips(REG_SOURCES, 'reg-sources');
-buildSourceChips(POL_SOURCES, 'pol-sources');
+  const editionLabel = ed === 'consulting' ? 'Consulting Edition' : 'Policy Edition';
+  const genDate = new Date(newsletterData.generated_at);
+  const dateStr = genDate.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-function setProgress(prefix, pct) {
-  const bar = document.getElementById(prefix+'-progress');
-  bar.style.display = 'block';
-  document.getElementById(prefix+'-fill').style.width = pct+'%';
-  if (pct >= 100) setTimeout(() => bar.style.display = 'none', 800);
-}
-
-function setStatus(prefix, msg) {
-  document.getElementById(prefix+'-status').textContent = msg;
-}
-
-function showError(prefix, msg) {
-  document.getElementById(prefix+'-error').innerHTML =
-    msg ? `<div class="error">${msg}</div>` : '';
-}
-
-async function fetchRSS(url) {
-  const r = await fetch(CORS + encodeURIComponent(url));
-  const d = await r.json();
-  if (d.status !== 'ok') return [];
-  return (d.items || []).map(i => ({
-    title: i.title,
-    url: i.link || i.guid,
-    published: i.pubDate ? new Date(i.pubDate) : new Date(),
-    source: d.feed?.title || '',
-    snippet: stripHtml(i.description || i.content || '').slice(0, 400),
-  }));
-}
-
-function stripHtml(html) {
-  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function daysAgo(n) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d;
-}
-
-async function fetchFederalRegister(days) {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const dateStr = since.toISOString().slice(0,10);
-  const agencies = ['centers-for-medicare-medicaid-services','health-and-human-services-department',
-    'food-and-drug-administration','drug-enforcement-administration',
-    'office-for-civil-rights-hhs','federal-trade-commission',
-    'office-of-the-national-coordinator-for-health-information-technology'];
-  const agencyQ = agencies.map(a=>`agency_slugs[]=${a}`).join('&');
-  const url = `https://www.federalregister.gov/api/v1/documents.json?per_page=40&order=newest&${agencyQ}&conditions[publication_date][gte]=${dateStr}&conditions[type][]=RULE&conditions[type][]=PRORULE&conditions[type][]=NOTICE&fields[]=title&fields[]=abstract&fields[]=publication_date&fields[]=html_url&fields[]=agencies&fields[]=type`;
-  try {
-    const r = await fetch(url);
-    const d = await r.json();
-    return (d.results || []).map(i => ({
-      title: i.title,
-      url: i.html_url,
-      published: new Date(i.publication_date),
-      source: 'Federal Register — ' + (i.agencies?.[0]?.name || ''),
-      snippet: (i.abstract || '').slice(0, 400),
-      docType: i.type,
-    }));
-  } catch(e) { return []; }
-}
-
-async function fetchMedPAC() {
-  // MedPAC doesn't have a reliable RSS; use their publications page via rss2json
-  try {
-    const items = await fetchRSS('https://www.medpac.gov/feed/');
-    return items;
-  } catch(e) { return []; }
-}
-
-async function fetchCongressBills(days) {
-  // Congress.gov API - free with key from api.congress.gov; fall back to RSS
-  try {
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    const fromDate = since.toISOString().slice(0,10)+'T00:00:00Z';
-    const url = `https://api.congress.gov/v3/bill?format=json&limit=20&fromDateTime=${fromDate}&sort=updateDate+desc&api_key=DEMO_KEY`;
-    const r = await fetch(url);
-    const d = await r.json();
-    return ((d.bills || [])).filter(b => {
-      const title = (b.title||'').toLowerCase();
-      return title.includes('health') || title.includes('medicare') ||
-             title.includes('medicaid') || title.includes('drug') ||
-             title.includes('hospital') || title.includes('patient') ||
-             title.includes('coverage') || title.includes('care');
-    }).map(b => ({
-      title: b.title,
-      url: b.url || `https://www.congress.gov/bill/${b.congress}th-congress/${b.type?.toLowerCase()}-bill/${b.number}`,
-      published: new Date(b.updateDate || b.introducedDate || Date.now()),
-      source: `Congress.gov — ${b.type} ${b.number} (${b.congress}th)`,
-      snippet: `Sponsor: ${b.sponsors?.[0]?.fullName || 'N/A'} | Latest action: ${b.latestAction?.text || 'N/A'}`,
-    }));
-  } catch(e) { return []; }
-}
-
-async function classifyItems(items, categories, prefix) {
-  if (!apiKey) { showError(prefix, 'Please save your Anthropic API key first.'); return []; }
-  const BATCH = 6;
-  const results = [];
-  for (let i = 0; i < items.length; i += BATCH) {
-    const batch = items.slice(i, i + BATCH);
-    const prompt = `You are a healthcare regulatory analyst. Classify each article below.
-
-Categories: ${categories.join(' | ')}
-
-For each article, return ONLY a JSON array (no markdown) with objects:
-{ "idx": <number>, "category": "<exact category string>", "urgency": "routine"|"important"|"urgent", "summary": "<2 sentence plain English summary>" }
-
-Articles:
-${batch.map((it,j) => `[${i+j}] TITLE: ${it.title}\nSOURCE: ${it.source}\nSNIPPET: ${it.snippet}`).join('\n\n')}`;
-
-    try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-        body: JSON.stringify({
-          model:'claude-haiku-4-5-20251001',
-          max_tokens:1500,
-          messages:[{role:'user',content:prompt}]
-        })
-      });
-      const data = await resp.json();
-      if (data.error) { showError(prefix, `Claude API error: ${data.error.message}`); break; }
-      const text = data.content?.[0]?.text || '[]';
-      const clean = text.replace(/```json|```/g,'').trim();
-      const parsed = JSON.parse(clean);
-      parsed.forEach(p => {
-        if (items[p.idx]) results[p.idx] = {...items[p.idx], ...p};
-      });
-    } catch(e) {
-      // fallback: no classification
-      batch.forEach((it,j) => { results[i+j] = {...it, category:'Other', urgency:'routine', summary:it.snippet}; });
-    }
-    setProgress(prefix, Math.min(95, ((i+BATCH)/items.length)*80+20));
-    await new Promise(r => setTimeout(r,400));
-  }
-  return results.filter(Boolean);
-}
-
-function renderResults(items, categories, containerId) {
+  // Group articles by category, sorted by urgency
   const grouped = {};
-  categories.forEach(c => grouped[c] = []);
-  items.forEach(it => {
-    const cat = grouped[it.category] ? it.category : 'Other';
+  (data.categories || []).forEach(c => grouped[c] = []);
+  (data.articles || []).forEach(a => {
+    const cat = grouped[a.category] ? a.category : data.categories[data.categories.length - 1];
     if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(it);
+    grouped[cat].push(a);
   });
+  const urgencyOrder = { urgent: 0, important: 1, routine: 2 };
+  Object.values(grouped).forEach(arr => arr.sort((a,b) => (urgencyOrder[a.urgency]||2)-(urgencyOrder[b.urgency]||2)));
 
-  const container = document.getElementById(containerId);
-  container.innerHTML = '';
+  // Priority items — urgent articles across all categories
+  const urgentItems = (data.articles || []).filter(a => a.urgency === 'urgent').slice(0, 4);
 
-  let hasAny = false;
-  categories.forEach(cat => {
-    const arr = grouped[cat];
-    if (!arr || arr.length === 0) return;
-    hasAny = true;
-    const section = document.createElement('div');
-    section.className = 'cat-section';
-    section.innerHTML = `<div class="cat-header">${cat}<span class="cat-count">${arr.length} item${arr.length!==1?'s':''}</span></div>`;
-    arr.sort((a,b) => {
-      const u = {urgent:0,important:1,routine:2};
-      return (u[a.urgency]||2)-(u[b.urgency]||2);
-    }).forEach(it => {
-      const d = it.published ? it.published.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
-      const urg = it.urgency || 'routine';
-      const urgLabel = {urgent:'🔴 Urgent',important:'🟡 Important',routine:'Routine'}[urg] || 'Routine';
-      const urgClass = 'badge urg-'+urg;
-      const row = document.createElement('div');
-      row.className = 'item';
-      row.innerHTML = `
-        <div>
-          <div class="item-title"><a href="${it.url||'#'}" target="_blank" rel="noopener">${it.title}</a></div>
-          <div class="item-meta">
-            <span>${it.source||''}</span>
-            ${d?`<span>${d}</span>`:''}
-            ${it.docType?`<span>${it.docType}</span>`:''}
+  // Comment periods open
+  const commentItems = (data.articles || []).filter(a => a.is_comment_period && a.comment_deadline).slice(0, 5);
+
+  // Stats
+  const totalArticles = (data.articles || []).length;
+  const urgentCount   = (data.articles || []).filter(a => a.urgency === 'urgent').length;
+  const importantCount = (data.articles || []).filter(a => a.urgency === 'important').length;
+  const activeCats    = Object.values(grouped).filter(a => a.length > 0).length;
+
+  document.getElementById('footer-date').textContent = `Updated ${dateStr}`;
+
+  // Build HTML
+  let html = '';
+
+  // Issue header
+  html += `
+<div class="issue-header">
+  <div class="issue-meta">${editionLabel} &nbsp;·&nbsp; Week of ${newsletterData.week_of}</div>
+  <h1 class="issue-title">${esc(data.subject_line || 'Healthcare Intelligence Briefing')}</h1>
+  <p class="issue-theme">${esc(data.theme_of_week || '')}</p>
+  <div class="issue-dateline">Updated ${dateStr}</div>
+</div>`;
+
+  // Editor's note
+  html += `
+<div class="editors-note-wrap">
+  <div class="editors-note">
+    <div class="en-label">Editor's Note</div>
+    <p class="en-text">${esc(data.editors_note || '')}</p>
+  </div>
+</div>`;
+
+  // Page body — main + sidebar
+  html += `<div class="page-body"><div class="main-col">`;
+
+  // Priority banner
+  if (urgentItems.length > 0) {
+    html += `<div class="priority-banner">
+  <div class="pb-label">🔴 Priority Items This Week</div>`;
+    urgentItems.forEach(a => {
+      html += `<div class="pb-item">
+    <span>▸</span>
+    <span><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a>
+    — ${esc(a.implication || '')}</span>
+  </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Category sections
+  (data.categories || []).forEach((cat, catIdx) => {
+    const articles = grouped[cat];
+    if (!articles || articles.length === 0) return;
+    const color = CAT_COLORS[catIdx % CAT_COLORS.length];
+    const catId = 'cat-' + catIdx;
+
+    html += `<div class="cat-section" id="${catId}">
+  <div class="cat-header">
+    <div class="cat-bar" style="background:${color}"></div>
+    <h2 class="cat-title">${esc(cat)}</h2>
+    <span class="cat-count">${articles.length}</span>
+  </div>`;
+
+    articles.forEach(a => {
+      const pubDate = a.published ? new Date(a.published).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+      html += `
+  <div class="article-card">
+    <div class="card-inner">
+      <div class="urgency-stripe ${a.urgency || 'routine'}"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-headline">
+            <a href="${esc(a.url || '#')}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a>
           </div>
-          ${it.summary?`<div class="item-summary">${it.summary}</div>`:''}
+          ${a.urgency === 'urgent' ? '<span class="urgency-badge urgent">🔴 Urgent</span>' : a.urgency === 'important' ? '<span class="urgency-badge important">🟡 Important</span>' : ''}
         </div>
-        <span class="${urgClass}">${urgLabel}</span>`;
-      section.appendChild(row);
+        <div class="card-meta">
+          <span class="source-pill"><a href="${esc(a.source_url || '#')}" target="_blank" rel="noopener">${esc(a.source_name || '')}</a></span>
+          ${a.doc_type ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
+          ${pubDate ? `<span class="date-tag">${pubDate}</span>` : ''}
+        </div>
+        ${a.summary ? `<p class="card-summary">${esc(a.summary)}</p>` : ''}
+        ${a.implication ? `<div class="card-implication"><strong>Key takeaway:</strong> ${esc(a.implication)}</div>` : ''}
+        ${a.comment_deadline ? `<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>` : ''}
+      </div>
+    </div>
+  </div>`;
     });
-    container.appendChild(section);
+
+    html += `</div>`; // end cat-section
   });
 
-  if (!hasAny) container.innerHTML = '<div class="empty">No items found. Try extending the date range or checking your sources.</div>';
-}
+  html += `</div>`; // end main-col
 
-async function runRegulatory() {
-  const days = parseInt(document.getElementById('reg-days').value);
-  const enabled = REG_SOURCES.filter(s => s.enabled);
-  if (!enabled.length) { showError('reg','Select at least one source.'); return; }
-  showError('reg','');
-  document.getElementById('reg-results').innerHTML = '';
-  setProgress('reg', 5);
-  setStatus('reg', 'Fetching sources...');
+  // Sidebar
+  html += `<aside class="sidebar">`;
 
-  let raw = [];
-  const cutoff = daysAgo(days);
-  for (let i=0; i<enabled.length; i++) {
-    const src = enabled[i];
-    setStatus('reg', `Fetching ${src.label}...`);
-    setProgress('reg', 5 + (i/enabled.length)*15);
-    try {
-      let items = [];
-      if (src.fetch) items = await src.fetch(days);
-      else if (src.rss) items = await fetchRSS(src.rss);
-      items = items.filter(it => it.published >= cutoff);
-      items.forEach(it => it.sourceId = src.id);
-      raw.push(...items);
-    } catch(e) {}
-  }
+  // Stats card
+  html += `<div class="sidebar-card">
+  <div class="sidebar-header"><div class="sidebar-title">This Week's Briefing</div></div>
+  <div class="sidebar-body">
+    <div class="stat-row"><span class="stat-label">Total articles</span><span class="stat-val">${totalArticles}</span></div>
+    <div class="stat-row"><span class="stat-label">Priority items</span><span class="stat-val" style="color:#DC2626">${urgentCount}</span></div>
+    <div class="stat-row"><span class="stat-label">Notable items</span><span class="stat-val" style="color:#D97706">${importantCount}</span></div>
+    <div class="stat-row"><span class="stat-label">Topic areas</span><span class="stat-val">${activeCats}</span></div>
+    <div class="stat-row"><span class="stat-label">Week of</span><span class="stat-val">${newsletterData.week_of}</span></div>
+  </div>
+</div>`;
 
-  if (!raw.length) {
-    setStatus('reg',''); setProgress('reg',100);
-    document.getElementById('reg-results').innerHTML = '<div class="empty">No articles found in this date range.</div>';
-    return;
-  }
-
-  raw = raw.slice(0, 60);
-  setStatus('reg', `Classifying ${raw.length} articles with Claude...`);
-  const classified = await classifyItems(raw, REG_CATEGORIES, 'reg');
-  regItems = classified;
-  setProgress('reg', 100);
-  setStatus('reg', `✓ ${classified.length} articles classified`);
-  renderResults(classified, REG_CATEGORIES, 'reg-results');
-}
-
-async function runPolicy() {
-  const days = parseInt(document.getElementById('pol-days').value);
-  const enabled = POL_SOURCES.filter(s => s.enabled);
-  if (!enabled.length) { showError('pol','Select at least one source.'); return; }
-  showError('pol','');
-  document.getElementById('pol-results').innerHTML = '';
-  setProgress('pol', 5);
-  setStatus('pol', 'Fetching sources...');
-
-  let raw = [];
-  const cutoff = daysAgo(days);
-  for (let i=0; i<enabled.length; i++) {
-    const src = enabled[i];
-    setStatus('pol', `Fetching ${src.label}...`);
-    setProgress('pol', 5 + (i/enabled.length)*15);
-    try {
-      let items = [];
-      if (src.fetch) items = await src.fetch(days);
-      else if (src.rss) items = await fetchRSS(src.rss);
-      items = items.filter(it => it.published >= cutoff);
-      items.forEach(it => it.sourceId = src.id);
-      raw.push(...items);
-    } catch(e) {}
-  }
-
-  if (!raw.length) {
-    setStatus('pol',''); setProgress('pol',100);
-    document.getElementById('pol-results').innerHTML = '<div class="empty">No articles found in this date range.</div>';
-    return;
-  }
-
-  raw = raw.slice(0, 60);
-  setStatus('pol', `Classifying ${raw.length} articles with Claude...`);
-  const classified = await classifyItems(raw, POL_CATEGORIES, 'pol');
-  polItems = classified;
-  setProgress('pol', 100);
-  setStatus('pol', `✓ ${classified.length} articles classified`);
-  renderResults(classified, POL_CATEGORIES, 'pol-results');
-}
-
-async function generateNewsletter() {
-  if (!apiKey) { showError('nl','Please save your Anthropic API key first.'); return; }
-  const allItems = [...regItems, ...polItems];
-  if (!allItems.length) {
-    showError('nl','Fetch articles from the Regulatory and/or Policy tabs first.');
-    return;
-  }
-  showError('nl','');
-  setStatus('nl','Generating newsletter draft...');
-  document.getElementById('nl-output').innerHTML = '';
-
-  const today = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  const urgent = allItems.filter(i=>i.urgency==='urgent');
-  const important = allItems.filter(i=>i.urgency==='important');
-
-  const regSummary = regItems.slice(0,20).map(i=>`[${i.category}] ${i.title} — ${i.summary||''}`).join('\n');
-  const polSummary = polItems.slice(0,15).map(i=>`[${i.category}] ${i.title} — ${i.summary||''}`).join('\n');
-
-  const prompt = `You are a healthcare regulatory and policy analyst writing a professional weekly newsletter for healthcare compliance, strategy, and policy professionals.
-
-Write a weekly newsletter draft for the week of ${today}.
-
-Tone: Authoritative but readable. Write like a sharp analyst, not a press release. No fluff. Use plain language. Each section intro should be 1–2 sentences of context, not just a restatement of the headline.
-
-Structure the newsletter EXACTLY as follows:
-1. Subject line (compelling, specific)
-2. Brief editor's note (2-3 sentences on the week's big themes)
-3. 🚨 This Week's Priority Items (only if urgency=urgent items exist — list top 3 max)
-4. ⚖️ Regulatory Roundup (group by category, 3-5 bullet items each, include source)
-5. 🏛️ Policy Watch (group by category, 3-5 bullet items each, include source)
-6. 📋 Comment Periods Open / Action Deadlines (pull proposed rules from regulatory items)
-7. One-line closing note
-
-REGULATORY ARTICLES:
-${regSummary || '(none fetched yet)'}
-
-POLICY ARTICLES:
-${polSummary || '(none fetched yet)'}
-
-Write the full newsletter now. Use bullet points within sections. Keep the whole thing under 800 words.`;
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body: JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:1800,
-        messages:[{role:'user',content:prompt}]
-      })
+  // Comment periods card
+  if (commentItems.length > 0) {
+    html += `<div class="sidebar-card">
+  <div class="sidebar-header"><div class="sidebar-title">📋 Comment Periods Open</div></div>
+  <div class="sidebar-body">`;
+    commentItems.forEach(a => {
+      html += `<div class="comment-item">
+    <div class="comment-item-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a></div>
+    ${a.comment_deadline ? `<div class="comment-item-date">Closes: ${esc(a.comment_deadline)}</div>` : '<div class="comment-item-date">Comment period open</div>'}
+  </div>`;
     });
-    const data = await resp.json();
-    if (data.error) { showError('nl',`Claude API error: ${data.error.message}`); return; }
-    const text = data.content?.[0]?.text || '';
-    setStatus('nl','✓ Draft generated');
-    document.getElementById('nl-output').innerHTML = `<div class="newsletter-preview">${escHtml(text)}</div>`;
-  } catch(e) {
-    showError('nl','Network error generating draft. Check your API key and connection.');
-    setStatus('nl','');
+    html += `</div></div>`;
   }
-}
 
-function copyNewsletter() {
-  const el = document.querySelector('.newsletter-preview');
-  if (!el) return;
-  navigator.clipboard.writeText(el.textContent).then(()=>{
-    const btn = event.target;
-    btn.textContent = 'Copied!';
-    setTimeout(()=>btn.textContent='Copy text',1500);
+  // TOC card
+  html += `<div class="sidebar-card">
+  <div class="sidebar-header"><div class="sidebar-title">In This Issue</div></div>
+  <div class="sidebar-body">`;
+  (data.categories || []).forEach((cat, catIdx) => {
+    const articles = grouped[cat];
+    if (!articles || !articles.length) return;
+    const color = CAT_COLORS[catIdx % CAT_COLORS.length];
+    html += `<div class="toc-item" onclick="scrollToCat('cat-${catIdx}')">
+    <span class="toc-dot" style="background:${color}"></span>
+    <span>${esc(cat)}</span>
+    <span class="toc-count">${articles.length}</span>
+  </div>`;
   });
+  html += `</div></div>`;
+
+  html += `</aside>`; // end sidebar
+  html += `</div>`; // end page-body
+
+  document.getElementById('content').innerHTML = html;
 }
 
-function clearResults(prefix) {
-  document.getElementById(prefix+'-results').innerHTML = '';
-  document.getElementById(prefix+'-status').textContent = '';
-  showError(prefix,'');
-  if (prefix==='reg') regItems = [];
-  if (prefix==='pol') polItems = [];
+function scrollToCat(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function esc(str) {
+  return (str || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
 }
+
+init();
 </script>
 </body>
 </html>
