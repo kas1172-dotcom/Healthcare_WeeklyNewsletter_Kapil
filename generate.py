@@ -9,7 +9,7 @@ SETUP:
     pip3 install anthropic
 
 CONFIGURE:
-    Set ANTHROPIC_API_KEY and GITHUB_TOKEN/GITHUB_REPO below.
+    Set ANTHROPIC_API_KEY and optionally GITHUB_TOKEN/GITHUB_REPO using environment variables.
 
 RUN:
     python3 generate.py
@@ -18,16 +18,22 @@ REQUIRES:
     raw_articles.json (from scrape.py)
 """
 
-import os, json, re, base64, sys, time
+import argparse
+import base64
+import json
+import os
+import re
+import sys
+import time
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+
 import requests
 from anthropic import Anthropic
-from datetime import datetime, timezone
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "BJIUNcwTtjVr9Xko7Xpa82azZq7GzQ0cHq8_e5kJmabJvX1nbm7rdkgmC5lcGZao_KHg-VnDMH0kG2DzXjnw4A-0FQ55AAA")
-GITHUB_TOKEN      = os.environ.get("GITHUB_TOKEN",      "YOUR_GITHUB_TOKEN_HERE")
-GITHUB_REPO       = os.environ.get("GITHUB_REPO",       "YOUR_USERNAME/YOUR_REPO")
-GITHUB_FILE_PATH  = "newsletter_data.json"
+# ── CONFIG ───────────────────────────────────────────────────────────────────
+DEFAULT_MODEL   = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+GITHUB_FILE_PATH = "newsletter_data.json"
 
 # ── CATEGORIES ────────────────────────────────────────────────────────────────
 CONSULTING_CATEGORIES = [
@@ -108,6 +114,90 @@ def is_health_relevant(a):
     ]).lower()
     return not any(sig in text for sig in NOISE_SIGNALS)
 
+# ── HELPERS ───────────────────────────────────────────────────────────────────
+def parse_json_response(raw_text):
+    text = (raw_text or "").strip()
+    if "```" in text:
+        parts = text.split("```")
+        cleaned = []
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            if part.lower().startswith("json"):
+                part = part.split("\n", 1)[1] if "\n" in part else ""
+            cleaned.append(part)
+        text = "\n".join(cleaned).strip() or text
+
+    match = re.search(r"(\[.*\]|\{.*\})", text, re.S)
+    if match:
+        text = match.group(1)
+    return json.loads(text)
+
+
+def validate_article_output(article, idx=None):
+    errors = []
+    if not isinstance(article, dict):
+        errors.append("article is not an object")
+        return errors
+
+    required = ["category", "urgency", "headline", "summary", "implication", "is_comment_period"]
+    for field in required:
+        if field not in article:
+            errors.append(f"missing {field}")
+            continue
+        if field == "is_comment_period":
+            if not isinstance(article[field], bool):
+                errors.append("is_comment_period must be boolean")
+        else:
+            if not isinstance(article[field], str) or not article[field].strip():
+                errors.append(f"{field} must be a non-empty string")
+
+    urgency = article.get("urgency")
+    if urgency not in ("routine", "important", "urgent"):
+        errors.append(f"invalid urgency: {urgency}")
+    return errors
+
+
+def validate_newsletter_data(data):
+    if not isinstance(data, dict):
+        raise ValueError("newsletter data must be a JSON object")
+    for key in ("generated_at", "week_of", "consulting", "policy"):
+        if key not in data:
+            raise ValueError(f"missing top-level key: {key}")
+    for edition in ("consulting", "policy"):
+        sub = data[edition]
+        if not isinstance(sub, dict):
+            raise ValueError(f"{edition} must be an object")
+        for field in ("subject_line", "theme_of_week", "editors_note", "categories", "articles"):
+            if field not in sub:
+                raise ValueError(f"{edition} missing {field}")
+        if not isinstance(sub["categories"], list):
+            raise ValueError(f"{edition}.categories must be a list")
+        if not isinstance(sub["articles"], list):
+            raise ValueError(f"{edition}.articles must be a list")
+        for idx, article in enumerate(sub["articles"]):
+            errors = validate_article_output(article, idx)
+            if errors:
+                raise ValueError(f"{edition} article {idx} errors: {errors}")
+
+
+def require_env(name):
+    value = os.environ.get(name)
+    if not value:
+        print(f"\n✗ Environment variable {name} is required.")
+        sys.exit(1)
+    return value
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate HealthPulse newsletter JSON from raw articles")
+    parser.add_argument("-i", "--input", default="raw_articles.json", help="raw articles input JSON file")
+    parser.add_argument("-o", "--output", default="newsletter_data.json", help="newsletter JSON output file")
+    parser.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Anthropic model to use")
+    parser.add_argument("--no-push", action="store_true", help="save newsletter locally without pushing to GitHub")
+    return parser.parse_args()
+
 # ── CLASSIFICATION ────────────────────────────────────────────────────────────
 def classify_articles(client, articles, categories, audience_label, audience_desc):
     print(f"\n  Classifying {len(articles)} articles for {audience_label} audience...")
@@ -150,35 +240,40 @@ Urgency guide:
 Articles:
 {batch_text}"""
 
-        try:
-            response = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=3000,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            text = response.content[0].text.strip()
-            if "```" in text:
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            parsed = json.loads(text.strip())
-            for item in parsed:
-                idx = item.get("idx", 0)
-                if 0 <= idx < len(batch):
-                    results.append({**batch[idx], **item})
-            print(f"    ✓ Batch {i//BATCH+1}/{(len(articles)-1)//BATCH+1} — {len(parsed)} classified")
-        except Exception as e:
-            print(f"    ✗ Batch error: {e}")
-            for j, a in enumerate(batch):
-                results.append({
-                    **a,
-                    "category":          categories[-1],
-                    "urgency":           "routine",
-                    "headline":          a["title"],
-                    "summary":           a["snippet"],
-                    "implication":       "",
-                    "is_comment_period": bool(a.get("comment_deadline")),
-                })
+        attempt = 0
+        while attempt < 2:
+            try:
+                response = client.messages.create(
+                    model=DEFAULT_MODEL,
+                    max_tokens=3000,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                text = response.content[0].text.strip()
+                parsed = parse_json_response(text)
+                for item in parsed:
+                    idx = item.get("idx", 0)
+                    if 0 <= idx < len(batch):
+                        results.append({**batch[idx], **item})
+                print(f"    ✓ Batch {i//BATCH+1}/{(len(articles)-1)//BATCH+1} — {len(parsed)} classified")
+                break
+            except Exception as e:
+                attempt += 1
+                if attempt < 2:
+                    print(f"    ✗ Batch parse error, retrying: {e}")
+                    time.sleep(1)
+                    continue
+                print(f"    ✗ Batch error: {e}")
+                for j, a in enumerate(batch):
+                    results.append({
+                        **a,
+                        "category":          categories[-1],
+                        "urgency":           "routine",
+                        "headline":          a["title"],
+                        "summary":           a["snippet"],
+                        "implication":       "",
+                        "is_comment_period": bool(a.get("comment_deadline")),
+                    })
+                break
         time.sleep(0.3)
 
     return results
@@ -208,16 +303,15 @@ Return a JSON object — no markdown:
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            model=DEFAULT_MODEL,
             max_tokens=700,
             messages=[{"role": "user", "content": prompt}]
         )
         text = response.content[0].text.strip()
-        if "```" in text:
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-        return json.loads(text.strip())
+        parsed = parse_json_response(text)
+        if isinstance(parsed, dict):
+            return parsed
+        raise ValueError("editorial response was not a JSON object")
     except Exception as e:
         print(f"    ✗ Editorial error: {e}")
         return {
@@ -227,21 +321,28 @@ Return a JSON object — no markdown:
         }
 
 # ── GITHUB PUSH ───────────────────────────────────────────────────────────────
-def push_to_github(data):
+def save_json(data, filename):
     content_str = json.dumps(data, indent=2, default=str)
-    with open("newsletter_data.json", "w", encoding="utf-8") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write(content_str)
-    print("  ✓ Saved newsletter_data.json")
+    print(f"  ✓ Saved {filename}")
 
-    if GITHUB_TOKEN == "YOUR_GITHUB_TOKEN_HERE" or "/" not in GITHUB_REPO:
-        print("  ⚠ GitHub not configured — skipping push.")
-        print("    Upload newsletter_data.json to your GitHub repo manually.")
+
+def push_to_github(data, github_token, github_repo, output_file, no_push=False):
+    if no_push:
+        print("  ⚠ Skipping GitHub push (--no-push).")
         return
 
+    if not github_token or not github_repo or "/" not in github_repo:
+        print("  ⚠ GitHub not configured — skipping push.")
+        print(f"    Upload {output_file} to your GitHub repo manually.")
+        return
+
+    content_str = json.dumps(data, indent=2, default=str)
     encoded = base64.b64encode(content_str.encode()).decode()
-    api_url  = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
-    headers  = {
-        "Authorization": f"token {GITHUB_TOKEN}",
+    api_url = f"https://api.github.com/repos/{github_repo}/contents/{os.path.basename(output_file)}"
+    headers = {
+        "Authorization": f"token {github_token}",
         "Accept": "application/vnd.github.v3+json",
     }
     sha = None
@@ -249,7 +350,7 @@ def push_to_github(data):
         r = requests.get(api_url, headers=headers, timeout=10)
         if r.status_code == 200:
             sha = r.json().get("sha")
-    except:
+    except Exception:
         pass
 
     payload = {
@@ -262,52 +363,51 @@ def push_to_github(data):
     try:
         r = requests.put(api_url, headers=headers, json=payload, timeout=20)
         r.raise_for_status()
-        print(f"  ✓ Pushed to github.com/{GITHUB_REPO}")
+        print(f"  ✓ Pushed to github.com/{github_repo}")
         print(f"    Site updates in ~60 seconds.")
     except Exception as e:
         print(f"  ✗ GitHub push failed: {e}")
-        print(f"    Upload newsletter_data.json manually.")
+        print(f"    Upload {output_file} manually.")
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 def main():
+    args = parse_args()
+    anthropic_api_key = require_env("ANTHROPIC_API_KEY")
+    github_token = os.environ.get("GITHUB_TOKEN")
+    github_repo = os.environ.get("GITHUB_REPO")
+
     print("=" * 60)
     print("  HealthPulse — Step 2: Newsletter Generator")
     print("=" * 60)
 
-    if ANTHROPIC_API_KEY == "YOUR_ANTHROPIC_KEY_HERE":
-        print("\n✗ Set your ANTHROPIC_API_KEY in the CONFIG section.")
+    if not os.path.exists(args.input):
+        print(f"\n✗ {args.input} not found. Run scrape.py first.")
         sys.exit(1)
 
-    # Load raw articles
-    if not os.path.exists("raw_articles.json"):
-        print("\n✗ raw_articles.json not found. Run scrape.py first.")
-        sys.exit(1)
-
-    with open("raw_articles.json", "r", encoding="utf-8") as f:
+    with open(args.input, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
-    articles  = raw.get("articles", [])
-    week_of   = datetime.now().strftime("%B %d, %Y")
-    scraped   = raw.get("scraped_at", "")
+    articles = raw.get("articles", [])
+    week_of = datetime.now().strftime("%B %d, %Y")
+    scraped = raw.get("scraped_at", "")
 
-    print(f"\n  Loaded {len(articles)} articles from raw_articles.json")
+    print(f"\n  Loaded {len(articles)} articles from {args.input}")
     if scraped:
         print(f"  Scraped at: {scraped[:19]}")
 
-    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    global DEFAULT_MODEL
+    DEFAULT_MODEL = args.model
+    client = Anthropic(api_key=anthropic_api_key)
 
-    # Split by audience
-    reg_pool = [a for a in articles if a["source_type"] in ("regulatory", "both")][:60]
-    pol_pool = [a for a in articles if a["source_type"] in ("policy", "both")]
-    # Add regulatory items to policy pool that aren't already there
-    pol_urls = {a["url"] for a in pol_pool}
-    pol_pool += [a for a in reg_pool if a["url"] not in pol_urls][:20]
-    pol_pool  = pol_pool[:60]
+    reg_pool = [a for a in articles if a.get("source_type") in ("regulatory", "both")][:60]
+    pol_pool = [a for a in articles if a.get("source_type") in ("policy", "both")]
+    pol_urls = {a.get("url") for a in pol_pool}
+    pol_pool += [a for a in reg_pool if a.get("url") not in pol_urls][:20]
+    pol_pool = pol_pool[:60]
 
     print(f"\n  Consulting pool: {len(reg_pool)} articles")
     print(f"  Policy pool:     {len(pol_pool)} articles")
 
-    # Classify
     print("\n[1/3] Classifying...")
     consulting_raw = classify_articles(
         client, reg_pool, CONSULTING_CATEGORIES,
@@ -320,47 +420,49 @@ def main():
         "healthcare policy professionals, legislative staff, lobbyists, and government affairs leads"
     )
 
-    # Filter noise and sort
-    urgency_key = lambda a: {"urgent":0,"important":1,"routine":2}.get(a.get("urgency","routine"),2)
+    urgency_key = lambda a: {"urgent": 0, "important": 1, "routine": 2}.get(a.get("urgency", "routine"), 2)
     consulting_articles = sorted([a for a in consulting_raw if is_health_relevant(a)], key=urgency_key)
-    policy_articles     = sorted([a for a in policy_raw     if is_health_relevant(a)], key=urgency_key)
+    policy_articles = sorted([a for a in policy_raw if is_health_relevant(a)], key=urgency_key)
 
     print(f"\n  After filter: {len(consulting_articles)} consulting, {len(policy_articles)} policy articles")
 
-    # Generate editorial
     print("\n[2/3] Generating editorial...")
     consulting_ed = generate_editorial(client, consulting_articles, "consulting", week_of)
-    policy_ed     = generate_editorial(client, policy_articles,     "policy",     week_of)
+    policy_ed = generate_editorial(client, policy_articles, "policy", week_of)
 
-    # Build output
     output = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "week_of":      week_of,
+        "week_of": week_of,
         "consulting": {
             **consulting_ed,
             "categories": CONSULTING_CATEGORIES,
-            "articles":   consulting_articles,
+            "articles": consulting_articles,
         },
         "policy": {
             **policy_ed,
             "categories": POLICY_CATEGORIES,
-            "articles":   policy_articles,
+            "articles": policy_articles,
         },
     }
 
-    # Publish
-    print("\n[3/3] Publishing...")
-    push_to_github(output)
+    try:
+        validate_newsletter_data(output)
+    except ValueError as exc:
+        print(f"\n✗ Validation failed: {exc}")
+        sys.exit(1)
 
-    # Summary
+    print("\n[3/3] Publishing...")
+    save_json(output, args.output)
+    push_to_github(output, github_token, github_repo, args.output, args.no_push)
+
     cat_counts_c = {}
     for a in consulting_articles:
-        cat_counts_c[a.get("category","?")] = cat_counts_c.get(a.get("category","?"),0)+1
+        cat_counts_c[a.get("category", "?")] = cat_counts_c.get(a.get("category", "?"), 0) + 1
     cat_counts_p = {}
     for a in policy_articles:
-        cat_counts_p[a.get("category","?")] = cat_counts_p.get(a.get("category","?"),0)+1
+        cat_counts_p[a.get("category", "?")] = cat_counts_p.get(a.get("category", "?"), 0) + 1
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print(f"  ✓ Consulting: {len(consulting_articles)} articles")
     for cat, n in sorted(cat_counts_c.items(), key=lambda x: -x[1]):
         print(f"    {n:>3}  {cat}")
@@ -368,7 +470,7 @@ def main():
     for cat, n in sorted(cat_counts_p.items(), key=lambda x: -x[1]):
         print(f"    {n:>3}  {cat}")
     print(f"\n  ✓ Week of: {week_of}")
-    print("="*60)
+    print("=" * 60)
 
 if __name__ == "__main__":
     main()

@@ -5,7 +5,7 @@ HealthPulse Intelligence — Step 1: Scraper
 Fetches all sources and saves raw_articles.json.
 No Anthropic API key needed. Run this first.
 
-SETUP:   pip3 install requests feedparser
+SETUP:   pip3 install requests feedparser beautifulsoup4
 RUN:     python3 scrape.py
 OUTPUT:  raw_articles.json
 """
@@ -34,6 +34,17 @@ SESSION.headers.update({
     "Accept-Encoding": "gzip, deflate, br",
     "Cache-Control":   "no-cache",
 })
+retry_strategy = Retry(
+    total=3,
+    connect=3,
+    read=3,
+    status=3,
+    backoff_factor=0.8,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["HEAD", "GET", "OPTIONS"],
+)
+SESSION.mount("https://", HTTPAdapter(max_retries=retry_strategy))
+SESSION.mount("http://", HTTPAdapter(max_retries=retry_strategy))
 
 # ── FILTERS ───────────────────────────────────────────────────────────────────
 FR_AGENCIES = [
@@ -140,11 +151,30 @@ def make_item(title, url, published, source_name, source_url,
         "source_type":      source_type,
     }
 
+def normalize_url(url):
+    if not url:
+        return url
+    try:
+        parts = urlparse(url)
+        query = sorted(parse_qsl(parts.query, keep_blank_values=True))
+        normalized = urlunparse(parts._replace(query=urlencode(query, doseq=True)))
+        return normalized
+    except Exception:
+        return url
+
+
+def get_url(url, timeout=15, **kwargs):
+    try:
+        return get_url(url, timeout=timeout, **kwargs)
+    except requests.RequestException:
+        return None
+
+
 def try_rss_urls(name, urls, source_type, health_filter=False):
     """Try multiple RSS URL variants, return first that works."""
     for url in urls:
         try:
-            r = SESSION.get(url, timeout=12)
+            r = get_url(url, timeout=12)
             if r.status_code != 200:
                 continue
             feed = feedparser.parse(r.content)
@@ -193,7 +223,7 @@ def fetch_rss(name, urls_or_url, source_type, health_filter=False, date_filter=T
 
     for url in urls:
         try:
-            r = SESSION.get(url, timeout=15)
+            r = get_url(url, timeout=15)
             if r.status_code != 200:
                 continue
             feed = feedparser.parse(r.content)
@@ -255,7 +285,7 @@ def fetch_federal_register():
         f"&fields[]=html_url&fields[]=agencies&fields[]=type&fields[]=comments_close_on"
     )
     try:
-        r = SESSION.get(url, timeout=20)
+        r = get_url(url, timeout=20)
         r.raise_for_status()
         items = []
         for d in r.json().get("results", []):
@@ -293,7 +323,7 @@ def fetch_congress_bills():
 
     # Pull recent bills — no date filter, just take top 100 and keyword filter
     try:
-        r = SESSION.get(
+        r = get_url(
             f"https://api.congress.gov/v3/bill?format=json&limit=100"
             f"&sort=updateDate+desc&api_key={CONGRESS_API_KEY}",
             timeout=15
@@ -326,7 +356,7 @@ def fetch_congress_bills():
     for chamber, committees in HEALTH_COMMITTEES.items():
         for code, name in committees.items():
             try:
-                r = SESSION.get(
+                r = get_url(
                     f"https://api.congress.gov/v3/committee/{chamber}/{code}/bills"
                     f"?format=json&limit=20&api_key={CONGRESS_API_KEY}",
                     timeout=12
@@ -361,7 +391,7 @@ def fetch_bill_summaries():
     """Fetch recent bill summaries — richer text for health matching."""
     print("  Congress.gov — Bill Summaries...")
     try:
-        r = SESSION.get(
+        r = get_url(
             f"https://api.congress.gov/v3/summaries?format=json&limit=50"
             f"&sort=updateDate+desc&api_key={CONGRESS_API_KEY}",
             timeout=15
@@ -398,7 +428,7 @@ def fetch_bill_summaries():
 def fetch_crs_reports():
     print("  Congress.gov — CRS Reports...")
     try:
-        r = SESSION.get(
+        r = get_url(
             f"https://api.congress.gov/v3/crsreport?format=json&limit=20"
             f"&api_key={CONGRESS_API_KEY}",
             timeout=15
@@ -440,7 +470,7 @@ def fetch_fda_api():
     date_str  = cutoff_dt.strftime("%Y%m%d")
     items = []
     try:
-        r = SESSION.get(
+        r = get_url(
             f"https://api.fda.gov/device/510k.json"
             f"?limit=20&search=decision_date:[{date_str}+TO+99991231]"
             f"&sort=decision_date:desc",
@@ -459,7 +489,7 @@ def fetch_fda_api():
     except Exception as e:
         print(f"    ✗ 510k: {e}")
     try:
-        r = SESSION.get(
+        r = get_url(
             f"https://api.fda.gov/drug/enforcement.json"
             f"?limit=10&search=report_date:[{date_str}+TO+99991231]"
             f"&sort=report_date:desc",
@@ -483,35 +513,33 @@ def fetch_fda_api():
 def fetch_oig_enforcement():
     print("  OIG — Enforcement Actions...")
     try:
-        r = SESSION.get("https://oig.hhs.gov/fraud/enforcement/", timeout=15)
-        if r.status_code != 200:
-            print(f"    ✗ HTTP {r.status_code}")
+        r = get_url("https://oig.hhs.gov/fraud/enforcement/", timeout=15)
+        if not r or r.status_code != 200:
+            print(f"    ✗ HTTP {getattr(r, 'status_code', 'no response')}")
             return []
-        from html.parser import HTMLParser
-        class P(HTMLParser):
-            def __init__(self):
-                super().__init__(); self.items=[]; self.cur={}; self.cap=False
-            def handle_starttag(self, tag, attrs):
-                attrs=dict(attrs); href=attrs.get("href","")
-                if tag=="a" and "/fraud/enforcement/" in href and len(href)>20:
-                    self.cur={"url":"https://oig.hhs.gov"+href if href.startswith("/") else href}
-                    self.cap=True
-            def handle_data(self, data):
-                if self.cap and data.strip(): self.cur["title"]=data.strip(); self.cap=False
-            def handle_endtag(self, tag):
-                if tag=="a" and self.cur.get("title") and self.cur.get("url"):
-                    self.items.append(self.cur.copy()); self.cur={}
-        p=P(); p.feed(r.text)
+        soup = BeautifulSoup(r.text, "html.parser")
+        entries = []
+        for a in soup.select('a[href*="/fraud/enforcement/"]'):
+            title = a.get_text(strip=True)
+            href = a.get("href", "")
+            if not title or len(title) < 10 or not href:
+                continue
+            url = href if href.startswith("http") else "https://oig.hhs.gov" + href
+            entries.append((title, url))
+
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         seen, items = set(), []
-        for x in p.items[:MAX_ITEMS]:
-            if x["url"] in seen or len(x.get("title",""))<10: continue
-            seen.add(x["url"])
+        for title, url in entries:
+            if url in seen:
+                continue
+            seen.add(url)
             items.append(make_item(
-                x["title"], x["url"], today,
+                title, url, today,
                 "HHS OIG — Enforcement", "https://oig.hhs.gov/fraud/enforcement/",
-                f"OIG enforcement action: {x['title']}", "Enforcement Action","","regulatory"
+                f"OIG enforcement action: {title}", "Enforcement Action", "", "regulatory"
             ))
+            if len(items) >= MAX_ITEMS:
+                break
         print(f"    ✓ {len(items)} enforcement actions")
         return items
     except Exception as e:
@@ -521,36 +549,33 @@ def fetch_oig_enforcement():
 def fetch_oig_reports():
     print("  OIG — Reports...")
     try:
-        r = SESSION.get("https://oig.hhs.gov/newsroom/whats-new/", timeout=15)
-        if r.status_code != 200:
-            print(f"    ✗ HTTP {r.status_code}")
+        r = get_url("https://oig.hhs.gov/newsroom/whats-new/", timeout=15)
+        if not r or r.status_code != 200:
+            print(f"    ✗ HTTP {getattr(r, 'status_code', 'no response')}")
             return []
-        from html.parser import HTMLParser
-        class P(HTMLParser):
-            def __init__(self):
-                super().__init__(); self.items=[]; self.cur={}; self.cap=False
-            def handle_starttag(self, tag, attrs):
-                attrs=dict(attrs); href=attrs.get("href","")
-                if tag=="a" and ("/reports/" in href or "/newsroom/" in href):
-                    self.cur={"url":"https://oig.hhs.gov"+href if href.startswith("/") else href}
-                    self.cap=True
-            def handle_data(self, data):
-                if self.cap and data.strip() and len(data.strip())>10:
-                    self.cur["title"]=data.strip(); self.cap=False
-            def handle_endtag(self, tag):
-                if tag=="a" and self.cur.get("title"):
-                    self.items.append(self.cur.copy()); self.cur={}
-        p=P(); p.feed(r.text)
+        soup = BeautifulSoup(r.text, "html.parser")
+        entries = []
+        for a in soup.select('a[href*="/reports/"], a[href*="/newsroom/"]'):
+            title = a.get_text(strip=True)
+            href = a.get("href", "")
+            if not title or len(title) < 10 or not href:
+                continue
+            url = href if href.startswith("http") else "https://oig.hhs.gov" + href
+            entries.append((title, url))
+
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         seen, items = set(), []
-        for x in p.items[:MAX_ITEMS]:
-            if x["url"] in seen or len(x.get("title",""))<10: continue
-            seen.add(x["url"])
+        for title, url in entries:
+            if url in seen:
+                continue
+            seen.add(url)
             items.append(make_item(
-                x["title"], x["url"], today,
+                title, url, today,
                 "HHS OIG — Reports", "https://oig.hhs.gov",
-                f"OIG: {x['title']}", "OIG Report","","regulatory"
+                f"OIG: {title}", "OIG Report", "", "regulatory"
             ))
+            if len(items) >= MAX_ITEMS:
+                break
         print(f"    ✓ {len(items)} OIG reports")
         return items
     except Exception as e:
@@ -566,7 +591,7 @@ def fetch_cms_newsroom():
         "https://www.cms.gov/Outreach-and-Education/Outreach/CMSFeeds/CMSFeeds-items/CMSNewsroom.xml",
     ]:
         try:
-            r = SESSION.get(url, timeout=10)
+            r = get_url(url, timeout=10)
             if r.status_code != 200: continue
             feed = feedparser.parse(r.content)
             if not feed.entries: continue
@@ -597,35 +622,32 @@ def fetch_cms_newsroom():
             continue
     # Fallback: scrape CMS press releases page
     try:
-        r = SESSION.get("https://www.cms.gov/newsroom", timeout=15)
-        if r.status_code == 200:
-            from html.parser import HTMLParser
-            class P(HTMLParser):
-                def __init__(self):
-                    super().__init__(); self.items=[]; self.cur={}; self.cap=False
-                def handle_starttag(self, tag, attrs):
-                    attrs=dict(attrs); href=attrs.get("href","")
-                    if tag=="a" and "/newsroom/press-releases/" in href and len(href)>30:
-                        self.cur={"url":"https://www.cms.gov"+href if href.startswith("/") else href}
-                        self.cap=True
-                def handle_data(self, data):
-                    if self.cap and data.strip() and len(data.strip())>15:
-                        self.cur["title"]=data.strip(); self.cap=False
-                def handle_endtag(self, tag):
-                    if tag=="a" and self.cur.get("title"):
-                        self.items.append(self.cur.copy()); self.cur={}
-            p=P(); p.feed(r.text)
-            today=datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        r = get_url("https://www.cms.gov/newsroom", timeout=15)
+        if r and r.status_code == 200:
+            soup = BeautifulSoup(r.text, "html.parser")
+            entries = []
+            for a in soup.select('a[href*="/newsroom/press-releases/"]'):
+                title = a.get_text(strip=True)
+                href = a.get("href", "")
+                if not title or len(title) < 15 or not href:
+                    continue
+                url = href if href.startswith("http") else "https://www.cms.gov" + href
+                entries.append((title, url))
+
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             seen, items = set(), []
-            for x in p.items[:MAX_ITEMS]:
-                if x["url"] in seen or len(x.get("title",""))<10: continue
-                seen.add(x["url"])
+            for title, url in entries:
+                if url in seen:
+                    continue
+                seen.add(url)
                 items.append(make_item(
-                    x["title"], x["url"], today,
+                    title, url, today,
                     "CMS Newsroom", "https://www.cms.gov",
-                    f"CMS press release: {x['title']}",
-                    "Press Release","","regulatory"
+                    f"CMS press release: {title}",
+                    "Press Release", "", "regulatory"
                 ))
+                if len(items) >= MAX_ITEMS:
+                    break
             if items:
                 print(f"    ✓ {len(items)} CMS items (scraped)")
                 return items
@@ -647,7 +669,7 @@ def fetch_court_cases():
     for term in terms:
         try:
             headers = {"Authorization": f"Token {COURTLISTENER_TOKEN}"} if COURTLISTENER_TOKEN else {}
-            r = SESSION.get(
+            r = get_url(
                 "https://www.courtlistener.com/api/rest/v4/search/",
                 params={
                     "q": term, "filed_after": date_str,
@@ -804,19 +826,36 @@ def fetch_all():
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Fetch HealthPulse raw article data")
+    parser.add_argument("-o", "--output", default="raw_articles.json", help="output JSON path")
+    parser.add_argument("--days-back", type=int, default=DAYS_BACK, help="lookback window in days")
+    parser.add_argument("--max-items", type=int, default=MAX_ITEMS, help="max items per feed")
+    parser.add_argument("--test", action="store_true", help="run source connectivity diagnostics")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    global DAYS_BACK, MAX_ITEMS
+    DAYS_BACK = args.days_back
+    MAX_ITEMS = args.max_items
+
     print("=" * 60)
     print("  HealthPulse — Step 1: Scraper")
     print(f"  30+ sources, max {MAX_ITEMS} items per RSS feed")
+    print(f"  Lookback: {DAYS_BACK} days")
     print("=" * 60)
 
     all_items = fetch_all()
 
-    # Deduplicate by URL
+    # Deduplicate by normalized URL
     seen, deduped = set(), []
     for a in all_items:
-        if a["url"] and a["url"] not in seen:
-            seen.add(a["url"])
+        url = normalize_url(a.get("url", ""))
+        if url and url not in seen:
+            seen.add(url)
+            a["url"] = url
             deduped.append(a)
 
     source_counts = {}
@@ -840,11 +879,11 @@ def main():
         "total":      len(deduped),
         "articles":   deduped,
     }
-    with open("raw_articles.json", "w", encoding="utf-8") as f:
+    with open(args.output, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, default=str)
 
-    print(f"\n  ✓ Saved {len(deduped)} articles to raw_articles.json")
-    print(f"  Next: python3 generate.py")
+    print(f"\n  ✓ Saved {len(deduped)} articles to {args.output}")
+    print(f"  Next: python3 generate.py -i {args.output}")
     print("=" * 60)
 
 def test_sources():
@@ -888,7 +927,7 @@ def test_sources():
     ok = warn = fail = 0
     for label, url in rss_checks:
         try:
-            r = SESSION.get(url, timeout=12)
+            r = get_url(url, timeout=12)
             if r.status_code != 200:
                 print(f"  {label:<24} HTTP {r.status_code:<9} —")
                 fail += 1
@@ -915,7 +954,7 @@ def test_sources():
     ]
     for label, url in api_checks:
         try:
-            r = SESSION.get(url, timeout=12)
+            r = get_url(url, timeout=12)
             mark = "✓ OK" if r.status_code == 200 else f"HTTP {r.status_code}"
             print(f"  {label:<24} {mark}")
             if r.status_code == 200: ok += 1
@@ -932,7 +971,7 @@ def test_sources():
         ("CMS Press",       "https://www.cms.gov/newsroom/press-releases"),
     ]:
         try:
-            r = SESSION.get(url, timeout=12)
+            r = get_url(url, timeout=12)
             mark = "✓ OK" if r.status_code == 200 else f"HTTP {r.status_code}"
             print(f"  {label:<24} {mark}")
             if r.status_code == 200: ok += 1

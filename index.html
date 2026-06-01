@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="HealthPulse Intelligence is a weekly healthcare policy briefing with AI-assisted editorial curation, tracking regulatory trends across government and industry reports.">
 <title>HealthPulse Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -13,12 +14,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 
 /* MASTHEAD */
 .masthead{background:#0C1A2E;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,0.3)}
-.masthead-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px;flex-wrap:wrap}
+.masthead-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:72px;gap:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.brand-line{display:flex;flex-direction:column;gap:4px}
 .brand-mark{width:32px;height:32px;background:#0D9488;border-radius:6px;display:flex;align-items:center;justify-content:center}
 .brand-mark svg{width:18px;height:18px}
-.brand-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.01em}
+.brand-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.01em}
 .brand-name span{color:#0D9488;font-weight:400}
+.masthead-note{font-size:12px;color:rgba(255,255,255,0.72);line-height:1.4;max-width:320px}
 .edition-switcher{display:flex;gap:2px;background:rgba(255,255,255,0.07);border-radius:8px;padding:3px}
 .edition-btn{height:34px;padding:0 14px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,0.5);transition:all 0.15s;white-space:nowrap}
 .edition-btn.active{background:#0D9488;color:#fff}
@@ -156,7 +159,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
           <path d="M16 18l1.5 1.5L20 16" stroke="#fff" stroke-width="1.5"/>
         </svg>
       </div>
-      <span class="brand-name">HealthPulse <span>Intelligence</span></span>
+      <div class="brand-line">
+        <span class="brand-name">HealthPulse <span>Intelligence</span></span>
+        <div class="masthead-note">Weekly healthcare policy briefing with AI-enhanced editorial curation.</div>
+      </div>
     </a>
     <div class="edition-switcher">
       <button class="edition-btn active" id="btn-consulting" onclick="switchEdition('consulting')">📊 Consulting</button>
@@ -208,7 +214,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 </main>
 
 <footer class="site-footer">
-  <div class="footer-brand">HealthPulse Intelligence</div>
+  <div class="footer-brand">HealthPulse Intelligence · Healthcare policy briefing prototype</div>
   <div class="footer-sub" id="footer-date"></div>
   <div class="footer-sub">Regulatory &amp; Policy Briefing · Sources cited from official government and research publications</div>
 </footer>
@@ -223,7 +229,8 @@ const CAT_COLORS = [
 ];
 
 let newsletterData = null;
-let currentEdition  = 'consulting';
+const URL_PARAMS = new URLSearchParams(window.location.search);
+let currentEdition = URL_PARAMS.get('edition') === 'policy' ? 'policy' : 'consulting';
 let currentDays     = 7;
 let currentSort     = 'category';
 let currentCat      = 'all';
@@ -237,7 +244,7 @@ async function init() {
     newsletterData = await r.json();
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.remove('hidden');
-    renderEdition('consulting');
+    renderEdition(currentEdition);
   } catch(e) {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('error').classList.remove('hidden');
@@ -248,6 +255,7 @@ async function init() {
 function switchEdition(ed) {
   currentEdition = ed;
   currentCat = 'all';
+  window.history.replaceState(null, '', '?edition=' + ed);
   document.getElementById('btn-consulting').classList.toggle('active', ed==='consulting');
   document.getElementById('btn-policy').classList.toggle('active', ed==='policy');
   renderEdition(ed);
@@ -276,6 +284,24 @@ function setCat(c) {
 }
 
 // ── APPLY FILTERS ─────────────────────────────────────────────
+function buildEditorNoteText(data) {
+  const timeframe = currentDays === 7 ? 'last 7 days' : currentDays === 30 ? 'last 30 days' : 'last 60 days';
+  const categoryLabel = currentCat === 'all' ? 'all categories' : currentCat;
+  const editionLabel = currentEdition === 'policy' ? 'Policy edition' : 'Consulting edition';
+  const intro = currentCat === 'all'
+    ? `This ${editionLabel.toLowerCase()} highlights the most relevant developments across all categories from the ${timeframe}.`
+    : `This ${editionLabel.toLowerCase()} focuses on ${categoryLabel} developments from the ${timeframe}.`;
+  const baseNote = data && data.editors_note ? ` ${data.editors_note}` : '';
+  return (intro + baseNote).trim();
+}
+
+function updateEditorNote() {
+  const noteEl = document.getElementById('editors-note-text');
+  if (!noteEl || !newsletterData) return;
+  const data = newsletterData[currentEdition];
+  noteEl.textContent = buildEditorNoteText(data);
+}
+
 function applyFilters() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - currentDays);
@@ -291,6 +317,11 @@ function applyFilters() {
   // Update count
   document.getElementById('results-count').textContent =
     filtered.length + ' article' + (filtered.length !== 1 ? 's' : '');
+
+  const emptyEl = document.getElementById('no-results');
+  if (emptyEl) {
+    emptyEl.style.display = filtered.length === 0 ? '' : 'none';
+  }
 
   // Show/hide cards
   document.querySelectorAll('.article-card').forEach(el => {
@@ -326,6 +357,7 @@ function applyFilters() {
 
   // Update sidebar TOC counts
   updateSidebarTOC(filtered);
+  updateEditorNote();
 }
 
 function renderFlatList(articles) {
@@ -361,7 +393,12 @@ function updateSidebarTOC(filtered) {
 // ── RENDER EDITION ────────────────────────────────────────────
 function renderEdition(ed) {
   const data = newsletterData[ed];
-  if (!data) return;
+  document.getElementById('btn-consulting').classList.toggle('active', ed==='consulting');
+  document.getElementById('btn-policy').classList.toggle('active', ed==='policy');
+  if (!data || !Array.isArray(data.articles)) {
+    document.getElementById('content').innerHTML = `<div class="error-screen"><h2>Newsletter data is invalid</h2><p>The data file appears malformed or incomplete. Validate <code>newsletter_data.json</code> and refresh.</p></div>`;
+    return;
+  }
 
   allArticles = (data.articles || []).map((a, i) => ({...a, _id: String(i)}));
 
@@ -421,7 +458,7 @@ function renderEdition(ed) {
 <div class="en-wrap">
   <div class="editors-note">
     <div class="en-label">Editor's Note</div>
-    <p class="en-text">${esc(data.editors_note||'')}</p>
+    <p class="en-text" id="editors-note-text">${esc(data.editors_note||'')}</p>
   </div>
 </div>`;
 
@@ -502,11 +539,18 @@ function renderEdition(ed) {
 
   html += `</aside></div>`; // end sidebar + page-body
 
+  html += `</aside></div>`;
+  html += `<div class="empty-state hidden" id="no-results">
+    <div class="empty-icon">🔎</div>
+    <div class="empty-msg">No articles match these filters. Try expanding the date range or selecting a different category.</div>
+  </div>`;
+
   document.getElementById('content').innerHTML = html;
 
   // Apply default filter (7 days)
   currentCat = 'all';
   applyFilters();
+  updateEditorNote();
 }
 
 function buildCardHTML(a, showCatTag) {

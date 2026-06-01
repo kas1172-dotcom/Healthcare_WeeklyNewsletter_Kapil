@@ -16,9 +16,6 @@
 name: Weekly Newsletter
 
 on:
-  schedule:
-    # 8:00 AM ET Monday = 12:00 UTC (13:00 UTC during daylight saving)
-    - cron: '0 12 * * 1'
   workflow_dispatch:   # lets you trigger it manually from the Actions tab
 
 permissions:
@@ -37,7 +34,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install requests feedparser anthropic
+        run: pip install requests feedparser anthropic beautifulsoup4
 
       - name: Scrape sources
         env:
@@ -47,7 +44,12 @@ jobs:
       - name: Generate newsletter
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
         run: python generate.py
+
+      - name: Validate generated files
+        run: python validate.py --raw raw_articles.json --newsletter newsletter_data.json
 
       - name: Commit updated newsletter
         run: |
