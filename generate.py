@@ -374,7 +374,7 @@ def main():
     args = parse_args()
     anthropic_api_key = require_env("ANTHROPIC_API_KEY")
     github_token = os.environ.get("GITHUB_TOKEN")
-    github_repo = os.environ.get("GITHUB_REPO")
+    github_repo = os.environ.get("GITHUB_REPO") or os.environ.get("GITHUB_REPOSITORY")
 
     print("=" * 60)
     print("  HealthPulse — Step 2: Newsletter Generator")

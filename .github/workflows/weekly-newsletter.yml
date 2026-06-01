@@ -15,6 +15,9 @@
 
 name: Weekly Newsletter
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_dispatch:   # lets you trigger it manually from the Actions tab
 
@@ -45,7 +48,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
+          GITHUB_REPO: ${{ github.repository }}
         run: python generate.py
 
       - name: Validate generated files
