@@ -2,7 +2,7 @@
 """
 Healthcare Regulatory & Policy Monitor — Step 2: Newsletter Generator
 =======================================================
-Reads raw_articles.json, classifies with Claude Sonnet,
+Reads raw_articles.json, classifies and synthesizes articles,
 generates two newsletter editions, pushes to GitHub.
 
 SETUP:

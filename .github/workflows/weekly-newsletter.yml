@@ -8,7 +8,7 @@
 #   2. Put this file there, named: weekly-newsletter.yml
 #   3. Go to repo Settings → Secrets and variables → Actions → New repository secret
 #      Add two secrets:
-#        ANTHROPIC_API_KEY   = your sk-ant-... key
+#        ANTHROPIC_API_KEY   = your NLP API key
 #        CONGRESS_API_KEY    = your congress.gov key
 #   4. Commit. It will run automatically every Monday, or trigger manually
 #      from the Actions tab → "Run workflow".

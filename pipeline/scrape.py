@@ -3,7 +3,7 @@
 Healthcare Regulatory & Policy Monitor — Step 1: Scraper
 ===========================================
 Fetches all sources and saves raw_articles.json.
-No Anthropic API key needed. Run this first.
+No NLP API key required for scraping. Run this first.
 
 SETUP:   pip3 install requests feedparser beautifulsoup4
 RUN:     python3 scrape.py
