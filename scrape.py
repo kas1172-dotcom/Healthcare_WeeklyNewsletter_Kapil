@@ -14,6 +14,8 @@ import os, json, re, sys, time
 import requests
 import feedparser
 from datetime import datetime, timedelta, timezone
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 DAYS_BACK        = 60
