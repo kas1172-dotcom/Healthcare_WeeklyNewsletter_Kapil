@@ -14,9 +14,12 @@ import os, json, re, sys, time
 import argparse
 import requests
 import feedparser
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from bs4 import BeautifulSoup
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 DAYS_BACK        = 60
@@ -170,51 +173,6 @@ def get_url(url, timeout=15, **kwargs):
     except requests.RequestException:
         return None
 
-
-def try_rss_urls(name, urls, source_type, health_filter=False):
-    """Try multiple RSS URL variants, return first that works."""
-    for url in urls:
-        try:
-            r = get_url(url, timeout=12)
-            if r.status_code != 200:
-                continue
-            feed = feedparser.parse(r.content)
-            if not feed.entries:
-                continue
-            feed_title = getattr(feed.feed, "title", name)
-            feed_link  = getattr(feed.feed, "link",  "")
-            items = []
-            for entry in list(feed.entries)[:MAX_ITEMS]:
-                pub = None
-                for attr in ("published_parsed", "updated_parsed"):
-                    val = getattr(entry, attr, None)
-                    if val:
-                        try:
-                            pub = datetime(*val[:6], tzinfo=timezone.utc)
-                            break
-                        except Exception:
-                            pass
-                pub = pub or datetime.now(timezone.utc)
-                snippet = ""
-                if hasattr(entry, "summary"):
-                    snippet = strip_html(entry.summary)
-                elif hasattr(entry, "content") and entry.content:
-                    snippet = strip_html(entry.content[0].get("value", ""))
-                title = getattr(entry, "title", "").strip()
-                link  = getattr(entry, "link", "").strip()
-                if not title or not link:
-                    continue
-                if health_filter and not is_health(title + " " + snippet):
-                    continue
-                items.append(make_item(
-                    title, link, pub.strftime("%Y-%m-%d"),
-                    feed_title, feed_link, snippet, "", "", source_type
-                ))
-            if items:
-                return items, url
-        except Exception:
-            continue
-    return [], None
 
 def fetch_rss(name, urls_or_url, source_type, health_filter=False, date_filter=True):
     """Fetch RSS. urls_or_url can be a string or list of fallback URLs."""
@@ -712,116 +670,65 @@ def fetch_court_cases():
 def fetch_all():
     all_items = []
 
+    # ── Government APIs (parallel, max 4 concurrent) ──────────────────────────
     print("\n── Government APIs ──────────────────────────────────────")
-    all_items += fetch_federal_register()
-    all_items += fetch_congress_bills()
-    all_items += fetch_bill_summaries()
-    all_items += fetch_crs_reports()
-    all_items += fetch_fda_api()
-    all_items += fetch_oig_enforcement()
-    all_items += fetch_oig_reports()
-    all_items += fetch_cms_newsroom()
-    all_items += fetch_court_cases()
+    api_fetchers = [
+        fetch_federal_register, fetch_congress_bills, fetch_bill_summaries,
+        fetch_crs_reports, fetch_fda_api, fetch_oig_enforcement,
+        fetch_oig_reports, fetch_cms_newsroom, fetch_court_cases,
+    ]
+    with ThreadPoolExecutor(max_workers=4) as exe:
+        futures = [exe.submit(fn) for fn in api_fetchers]
+        for f in as_completed(futures):
+            try:
+                all_items += f.result()
+            except Exception:
+                pass
 
-    print("\n── Government RSS ───────────────────────────────────────")
-    all_items += fetch_rss("FDA Press Releases",
-        "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml",
-        "regulatory")
-    all_items += fetch_rss("FTC Health",
-        "https://www.ftc.gov/news-events/news/press-releases/rss",
-        "regulatory", health_filter=True)
-    all_items += fetch_rss("DOJ Press Releases",
-        "https://www.justice.gov/news/rss",
-        "regulatory", health_filter=True)
-    all_items += fetch_rss("GAO Health Reports",
-        "https://www.gao.gov/rss/reports.xml",
-        "policy", health_filter=True)
-    all_items += fetch_rss("CBO Publications",
-        "https://www.cbo.gov/rss/publications.xml",
-        "policy", health_filter=True)
+    # ── RSS Feeds (parallel, max 12 concurrent) ───────────────────────────────
+    print("\n── RSS Feeds ────────────────────────────────────────────")
+    rss_tasks = [
+        # (name, url_or_list, source_type, health_filter, date_filter)
+        ("FDA Press Releases", "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml", "regulatory", False, True),
+        ("FTC Health",         "https://www.ftc.gov/news-events/news/press-releases/rss",          "regulatory", True,  True),
+        ("DOJ Press Releases", "https://www.justice.gov/news/rss",                                  "regulatory", True,  True),
+        ("GAO Health Reports", "https://www.gao.gov/rss/reports.xml",                               "policy",     True,  True),
+        ("CBO Publications",   "https://www.cbo.gov/rss/publications.xml",                          "policy",     True,  True),
+        ("STAT News",          "https://www.statnews.com/feed/",                                     "policy",     False, True),
+        ("Healthcare Dive",    "https://www.healthcaredive.com/feeds/news/",                         "both",       False, True),
+        ("Becker's Hospital",  "https://www.beckershospitalreview.com/feed/",                        "both",       False, True),
+        ("Becker's Payer",     "https://www.beckerspayer.com/feed/",                                 "regulatory", False, True),
+        ("Fierce Healthcare",  "https://www.fiercehealthcare.com/rss/xml",                           "both",       False, True),
+        ("Fierce Pharma",      "https://www.fiercepharma.com/rss/xml",                               "regulatory", False, True),
+        ("Fierce Biotech",     "https://www.fiercebiotech.com/rss/xml",                              "regulatory", False, True),
+        ("KFF Health News",    ["https://kffhealthnews.org/feed/", "http://kffhealthnews.org/feed/", "https://kffhealthnews.org/feed/rss/"], "policy", False, False),
+        ("KFF — Medicare",     "https://www.kff.org/topic/medicare/feed/",                          "policy",     False, False),
+        ("KFF — Medicaid",     "https://www.kff.org/topic/medicaid/feed/",                          "policy",     False, False),
+        ("KFF — Health Costs", "https://www.kff.org/topic/health-costs/feed/",                      "policy",     False, False),
+        ("KFF — ACA",          "https://www.kff.org/topic/affordable-care-act/feed/",               "policy",     False, False),
+        ("Health Affairs",     ["https://www.healthaffairs.org/action/showFeed?type=etoc&feed=rss&jc=hlthaff", "https://www.healthaffairs.org/rss/", "https://www.healthaffairs.org/news/rss"], "policy", False, False),
+        ("Commonwealth Fund",  ["https://www.commonwealthfund.org/rss.xml", "https://www.commonwealthfund.org/publications/rss", "https://www.commonwealthfund.org/feed"], "policy", False, False),
+        ("Brookings Health",   ["https://www.brookings.edu/topics/health-care/feed/", "https://www.brookings.edu/topic/health-care/feed/"], "policy", False, False),
+        ("NASHP",              "https://nashp.org/feed/",                                            "policy",     False, False),
+        ("MedPAC",             "https://www.medpac.gov/blog/feed/",                                  "policy",     False, False),
+        ("RAND Health",        "https://www.rand.org/content/rand/topics/health-care/jcr:content.feed", "policy", False, False),
+        ("NIH News",           "https://www.nih.gov/news-releases/feed.xml",                         "both",       False, True),
+        ("JD Supra Health",    "https://www.jdsupra.com/rss/Health_15.rss",                          "regulatory", False, False),
+        ("Healthcare Finance", "https://www.healthcarefinancenews.com/rss.xml",                      "both",       False, True),
+        ("MedCity News",       "https://medcitynews.com/feed/",                                      "both",       False, True),
+    ]
 
-    print("\n── Industry & Trade RSS ─────────────────────────────────")
-    all_items += fetch_rss("STAT News",
-        "https://www.statnews.com/feed/",
-        "policy")
-    all_items += fetch_rss("Healthcare Dive",
-        "https://www.healthcaredive.com/feeds/news/",
-        "both")
-    all_items += fetch_rss("Becker's Hospital",
-        "https://www.beckershospitalreview.com/feed/",
-        "both")
-    all_items += fetch_rss("Becker's Payer",
-        "https://www.beckerspayer.com/feed/",
-        "regulatory")
-    all_items += fetch_rss("Fierce Healthcare",
-        "https://www.fiercehealthcare.com/rss/xml",
-        "both")
-    all_items += fetch_rss("Fierce Pharma",
-        "https://www.fiercepharma.com/rss/xml",
-        "regulatory")
-    all_items += fetch_rss("Fierce Biotech",
-        "https://www.fiercebiotech.com/rss/xml",
-        "regulatory")
+    def _rss(task):
+        name, url, src, hf, df = task
+        return fetch_rss(name, url, src, health_filter=hf, date_filter=df)
 
-    print("\n── Policy & Research RSS ────────────────────────────────")
-    # KFF — multiple URL variants, no date filter
-    all_items += fetch_rss("KFF Health News",
-        ["https://kffhealthnews.org/feed/",
-         "http://kffhealthnews.org/feed/",
-         "https://kffhealthnews.org/feed/rss/",],
-        "policy", date_filter=False)
-    all_items += fetch_rss("KFF — Medicare",
-        "https://www.kff.org/topic/medicare/feed/",
-        "policy", date_filter=False)
-    all_items += fetch_rss("KFF — Medicaid",
-        "https://www.kff.org/topic/medicaid/feed/",
-        "policy", date_filter=False)
-    all_items += fetch_rss("KFF — Health Costs",
-        "https://www.kff.org/topic/health-costs/feed/",
-        "policy", date_filter=False)
-    all_items += fetch_rss("KFF — ACA",
-        "https://www.kff.org/topic/affordable-care-act/feed/",
-        "policy", date_filter=False)
-
-    # Health Affairs — multiple variants
-    all_items += fetch_rss("Health Affairs",
-        ["https://www.healthaffairs.org/action/showFeed?type=etoc&feed=rss&jc=hlthaff",
-         "https://www.healthaffairs.org/rss/",
-         "https://www.healthaffairs.org/news/rss"],
-        "policy", date_filter=False)
-
-    # Commonwealth Fund — multiple variants
-    all_items += fetch_rss("Commonwealth Fund",
-        ["https://www.commonwealthfund.org/rss.xml",
-         "https://www.commonwealthfund.org/publications/rss",
-         "https://www.commonwealthfund.org/feed"],
-        "policy", date_filter=False)
-
-    all_items += fetch_rss("Brookings Health",
-        ["https://www.brookings.edu/topics/health-care/feed/",
-         "https://www.brookings.edu/topic/health-care/feed/"],
-        "policy", date_filter=False)
-    all_items += fetch_rss("NASHP",
-        "https://nashp.org/feed/",
-        "policy", date_filter=False)
-    all_items += fetch_rss("MedPAC",
-        "https://www.medpac.gov/blog/feed/",
-        "policy", date_filter=False)
-    all_items += fetch_rss("RAND Health",
-        "https://www.rand.org/content/rand/topics/health-care/jcr:content.feed",
-        "policy", date_filter=False)
-    all_items += fetch_rss("NIH News",
-        "https://www.nih.gov/news-releases/feed.xml",
-        "both")
-    all_items += fetch_rss("JD Supra Health",
-        "https://www.jdsupra.com/rss/Health_15.rss",
-        "regulatory", date_filter=False)
-    all_items += fetch_rss("Healthcare Finance",
-        "https://www.healthcarefinancenews.com/rss.xml",
-        "both")
-    all_items += fetch_rss("MedCity News",
-        "https://medcitynews.com/feed/",
-        "both")
+    with ThreadPoolExecutor(max_workers=12) as exe:
+        futures = [exe.submit(_rss, t) for t in rss_tasks]
+        for f in as_completed(futures):
+            try:
+                all_items += f.result()
+            except Exception:
+                pass
 
     return all_items
 

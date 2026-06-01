@@ -28,15 +28,28 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 .edition-btn:hover:not(.active){color:rgba(255,255,255,0.85)}
 
 /* FILTER BAR */
-.filter-bar{background:#fff;border-bottom:1px solid #E8E6DF;position:sticky;top:60px;z-index:90}
-.filter-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:16px;height:50px;flex-wrap:wrap}
-.filter-group{display:flex;align-items:center;gap:6px}
+.filter-bar{background:#fff;border-bottom:1px solid #E8E6DF;position:sticky;top:72px;z-index:90}
+.filter-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column}
+.filter-row-top{display:flex;align-items:center;gap:12px;height:46px}
+.filter-row-cats{display:flex;align-items:center;gap:8px;padding:0 0 8px}
+.filter-group{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .filter-label{font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#94A3B8;white-space:nowrap}
 .filter-btns{display:flex;gap:2px;background:#F1F5F9;border-radius:6px;padding:2px}
 .filter-btn{height:26px;padding:0 10px;border:none;border-radius:4px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;background:transparent;color:#64748B;transition:all 0.12s;white-space:nowrap}
 .filter-btn.active{background:#fff;color:#0C1A2E;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-.filter-divider{width:1px;height:20px;background:#E2E8F0}
-.results-count{font-size:11px;color:#94A3B8;margin-left:auto}
+.filter-divider{width:1px;height:20px;background:#E2E8F0;flex-shrink:0}
+.results-count{font-size:11px;color:#94A3B8;margin-left:auto;white-space:nowrap;flex-shrink:0}
+/* Category scroller */
+#cat-filter-btns{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;flex:1;padding:2px 0}
+#cat-filter-btns::-webkit-scrollbar{display:none}
+/* Search */
+.search-wrap{position:relative;flex:1;min-width:100px;max-width:220px}
+.search-input{width:100%;height:28px;padding:0 26px 0 28px;border:1px solid #E2E8F0;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;color:#1A1A1A;background:#F8FAFC;outline:none;transition:border-color 0.12s,background 0.12s}
+.search-input:focus{border-color:#0D9488;background:#fff}
+.search-input::placeholder{color:#CBD5E1}
+.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#94A3B8;pointer-events:none}
+.search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94A3B8;cursor:pointer;font-size:16px;line-height:1;padding:0;display:none}
+.search-clear.visible{display:block}
 
 /* ISSUE HEADER */
 .issue-header{background:#0C1A2E;padding:48px 24px 40px;text-align:center}
@@ -111,7 +124,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 .empty-msg{font-size:13px;line-height:1.6}
 
 /* SIDEBAR */
-.sidebar{position:sticky;top:120px}
+.sidebar{position:sticky;top:172px}
 .sidebar-card{background:#fff;border:1px solid #E8E6DF;border-radius:8px;overflow:hidden;margin-bottom:14px}
 .sidebar-header{padding:10px 14px;background:#0C1A2E}
 .sidebar-title{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6)}
@@ -174,30 +187,37 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 <!-- FILTER BAR -->
 <div class="filter-bar">
   <div class="filter-inner">
-    <div class="filter-group">
-      <span class="filter-label">Period</span>
-      <div class="filter-btns">
-        <button class="filter-btn active" id="days-7"  onclick="setDays(7)">Last 7 days</button>
-        <button class="filter-btn"        id="days-30" onclick="setDays(30)">Last 30 days</button>
-        <button class="filter-btn"        id="days-60" onclick="setDays(60)">Last 60 days</button>
+    <div class="filter-row-top">
+      <div class="filter-group">
+        <span class="filter-label">Period</span>
+        <div class="filter-btns">
+          <button class="filter-btn active" id="days-7"  onclick="setDays(7)">Last 7 days</button>
+          <button class="filter-btn"        id="days-30" onclick="setDays(30)">Last 30 days</button>
+          <button class="filter-btn"        id="days-60" onclick="setDays(60)">Last 60 days</button>
+        </div>
       </div>
-    </div>
-    <div class="filter-divider"></div>
-    <div class="filter-group">
-      <span class="filter-label">Sort</span>
-      <div class="filter-btns">
-        <button class="filter-btn active" id="sort-category"   onclick="setSort('category')">By Category</button>
-        <button class="filter-btn"        id="sort-importance" onclick="setSort('importance')">By Importance</button>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <span class="filter-label">Sort</span>
+        <div class="filter-btns">
+          <button class="filter-btn active" id="sort-category"   onclick="setSort('category')">By Category</button>
+          <button class="filter-btn"        id="sort-importance" onclick="setSort('importance')">By Importance</button>
+        </div>
       </div>
+      <div class="filter-divider"></div>
+      <div class="search-wrap">
+        <svg class="search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input" id="search-input" type="text" placeholder="Search articles…" oninput="setSearch(this.value)" autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="search-clear" onclick="clearSearch()" aria-label="Clear search">×</button>
+      </div>
+      <span class="results-count" id="results-count"></span>
     </div>
-    <div class="filter-divider"></div>
-    <div class="filter-group">
+    <div class="filter-row-cats">
       <span class="filter-label">Category</span>
-      <div class="filter-btns" id="cat-filter-btns">
+      <div id="cat-filter-btns">
         <button class="filter-btn active" id="cat-all" onclick="setCat('all')">All</button>
       </div>
     </div>
-    <span class="results-count" id="results-count"></span>
   </div>
 </div>
 
@@ -234,6 +254,7 @@ let currentEdition = URL_PARAMS.get('edition') === 'policy' ? 'policy' : 'consul
 let currentDays     = 7;
 let currentSort     = 'category';
 let currentCat      = 'all';
+let currentSearch   = '';
 let allArticles     = [];   // full unfiltered set for current edition
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -255,6 +276,9 @@ async function init() {
 function switchEdition(ed) {
   currentEdition = ed;
   currentCat = 'all';
+  currentSearch = '';
+  const si = document.getElementById('search-input');
+  if (si) { si.value = ''; document.getElementById('search-clear').classList.remove('visible'); }
   window.history.replaceState(null, '', '?edition=' + ed);
   document.getElementById('btn-consulting').classList.toggle('active', ed==='consulting');
   document.getElementById('btn-policy').classList.toggle('active', ed==='policy');
@@ -283,56 +307,54 @@ function setCat(c) {
   applyFilters();
 }
 
+function setSearch(q) {
+  currentSearch = q.trim().toLowerCase();
+  document.getElementById('search-clear').classList.toggle('visible', currentSearch.length > 0);
+  applyFilters();
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  setSearch('');
+}
+
 // ── APPLY FILTERS ─────────────────────────────────────────────
 function buildEditorNoteText(data, filtered) {
   const timeframe = currentDays === 7 ? 'last 7 days' : currentDays === 30 ? 'last 30 days' : 'last 60 days';
-  const editionLabel = currentEdition === 'policy' ? 'Policy edition' : 'Consulting edition';
-  const selectionLabel = currentCat === 'all' ? 'all categories' : currentCat;
 
   if (!filtered || filtered.length === 0) {
     return `No articles match this view. Try expanding the date range or selecting a different category.`;
   }
 
   const total = filtered.length;
-  const urgencyCounts = filtered.reduce((acc, article) => {
-    const key = article.urgency || 'routine';
+  const urgencyCounts = filtered.reduce((acc, a) => {
+    const key = a.urgency || 'routine';
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
 
-  const categoryCounts = filtered.reduce((acc, article) => {
-    const cat = article.category || 'Unknown';
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {});
-
-  const sortedCategories = Object.entries(categoryCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 2)
-    .map(([cat]) => cat);
-
-  let summary = `This ${editionLabel.toLowerCase()} includes ${total} article${total === 1 ? '' : 's'} ${currentCat === 'all' ? 'across all categories' : 'for ' + selectionLabel} from the ${timeframe}.`;
+  let summary = `Showing ${total} article${total === 1 ? '' : 's'} from the ${timeframe}.`;
 
   if (urgencyCounts.urgent) {
-    summary += ` It highlights ${urgencyCounts.urgent} urgent item${urgencyCounts.urgent === 1 ? '' : 's'}`;
-    if (urgencyCounts.important || urgencyCounts.routine) {
-      summary += ` and ${urgencyCounts.important || 0} important item${urgencyCounts.important === 1 ? '' : 's'}`;
-    }
+    summary += ` ${urgencyCounts.urgent} urgent`;
+    if (urgencyCounts.important) summary += `, ${urgencyCounts.important} notable`;
     summary += '.';
   } else if (urgencyCounts.important) {
-    summary += ` It highlights ${urgencyCounts.important} important item${urgencyCounts.important === 1 ? '' : 's'}.`;
+    summary += ` ${urgencyCounts.important} notable item${urgencyCounts.important === 1 ? '' : 's'}.`;
   }
 
-  if (sortedCategories.length > 0 && currentCat === 'all') {
-    summary += ` Top topics include ${sortedCategories.join(' and ')}.`;
+  // Category-filtered view: use the AI-generated category note from generate.py
+  if (currentCat !== 'all') {
+    const catNote = data && data.category_notes && data.category_notes[currentCat];
+    return catNote ? `${summary} ${catNote}` : summary;
   }
 
-  if (filtered.length <= 3) {
-    const firstHeadline = filtered[0].headline || filtered[0].title || '';
-    if (firstHeadline) {
-      summary += ` Key story: ${firstHeadline}.`;
-    }
-  }
+  // All-categories view: top topics + full editor's note
+  const topCats = Object.entries(
+    filtered.reduce((acc, a) => { const c = a.category || ''; acc[c] = (acc[c] || 0) + 1; return acc; }, {})
+  ).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([c]) => c);
+
+  if (topCats.length > 0) summary += ` Top topics: ${topCats.join(' and ')}.`;
 
   const baseNote = data && data.editors_note ? ` ${data.editors_note}` : '';
   return (summary + baseNote).trim();
@@ -354,6 +376,10 @@ function applyFilters() {
     const pub = new Date(a.published_iso || a.published || '2000-01-01');
     if (pub < cutoff) return false;
     if (currentCat !== 'all' && a.category !== currentCat) return false;
+    if (currentSearch) {
+      const text = [a.headline, a.title, a.summary, a.source_name, a.category].join(' ').toLowerCase();
+      if (!text.includes(currentSearch)) return false;
+    }
     return true;
   });
 
@@ -372,9 +398,10 @@ function applyFilters() {
     const art = allArticles.find(a => a._id === id);
     if (!art) { el.style.display='none'; return; }
     const pub = new Date(art.published_iso || art.published || '2000-01-01');
-    const inDate = pub >= cutoff;
-    const inCat  = currentCat === 'all' || art.category === currentCat;
-    el.style.display = (inDate && inCat) ? '' : 'none';
+    const inDate   = pub >= cutoff;
+    const inCat    = currentCat === 'all' || art.category === currentCat;
+    const inSearch = !currentSearch || [art.headline, art.title, art.summary, art.source_name, art.category].join(' ').toLowerCase().includes(currentSearch);
+    el.style.display = (inDate && inCat && inSearch) ? '' : 'none';
   });
 
   // Show/hide category sections (by-category view)

@@ -25,6 +25,8 @@ import os
 import re
 import sys
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -32,7 +34,8 @@ import requests
 from anthropic import Anthropic
 
 # ── CONFIG ───────────────────────────────────────────────────────────────────
-DEFAULT_MODEL   = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+CLASSIFY_MODEL  = os.environ.get("ANTHROPIC_CLASSIFY_MODEL", "claude-haiku-4-5-20251001")
+EDITORIAL_MODEL = os.environ.get("ANTHROPIC_MODEL",          "claude-sonnet-4-6")
 GITHUB_FILE_PATH = "newsletter_data.json"
 
 # ── CATEGORIES ────────────────────────────────────────────────────────────────
@@ -194,27 +197,21 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Generate HealthPulse newsletter JSON from raw articles")
     parser.add_argument("-i", "--input", default="raw_articles.json", help="raw articles input JSON file")
     parser.add_argument("-o", "--output", default="newsletter_data.json", help="newsletter JSON output file")
-    parser.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Anthropic model to use")
+    parser.add_argument("-m", "--model", default=EDITORIAL_MODEL, help="Anthropic model for editorial generation")
     parser.add_argument("--no-push", action="store_true", help="save newsletter locally without pushing to GitHub")
     return parser.parse_args()
 
 # ── CLASSIFICATION ────────────────────────────────────────────────────────────
 def classify_articles(client, articles, categories, audience_label, audience_desc):
-    print(f"\n  Classifying {len(articles)} articles for {audience_label} audience...")
-    BATCH   = 8
-    results = []
+    BATCH = 15
+    total = len(articles)
+    print(f"\n  Classifying {total} articles for {audience_label} audience...")
 
-    for i in range(0, len(articles), BATCH):
-        batch = articles[i:i+BATCH]
-        batch_text = "\n\n".join(
-            f"[{j}] TITLE: {a['title']}\n"
-            f"SOURCE: {a['source_name']}\n"
-            f"DATE: {a['published']}\n"
-            f"SNIPPET: {a['snippet'][:300]}"
-            for j, a in enumerate(batch)
-        )
+    batches   = [articles[i:i+BATCH] for i in range(0, total, BATCH)]
+    n_batches = len(batches)
 
-        prompt = f"""You are a senior healthcare analyst writing for {audience_desc}.
+    # Static system prompt — cached across all batches for this edition run
+    system_text = f"""You are a senior healthcare analyst writing for {audience_desc}.
 
 Classify each article using ONLY these exact category strings:
 {chr(10).join(f'- {c}' for c in categories)}
@@ -232,51 +229,102 @@ Return ONLY a valid JSON array — no markdown, no preamble:
   "is_comment_period": <true if proposed rule open for public comment, else false>
 }}]
 
-Urgency guide:
-- urgent: final rules effective immediately, major enforcement actions, breaking policy shifts
-- important: proposed rules, significant guidances, notable enforcement trends, major reports
-- routine: routine notices, minor updates, standard publications
+Urgency: urgent=final rules effective immediately/major enforcement, important=proposed rules/significant guidance, routine=standard notices"""
 
-Articles:
-{batch_text}"""
+    results_map = {}
 
-        attempt = 0
-        while attempt < 2:
+    def process_batch(batch_idx, batch):
+        batch_text = "\n\n".join(
+            f"[{j}] TITLE: {a['title']}\n"
+            f"SOURCE: {a['source_name']}\n"
+            f"DATE: {a['published']}\n"
+            f"SNIPPET: {a['snippet'][:300]}"
+            for j, a in enumerate(batch)
+        )
+        for attempt in range(2):
             try:
-                response = client.messages.create(
-                    model=DEFAULT_MODEL,
-                    max_tokens=3000,
-                    messages=[{"role": "user", "content": prompt}]
+                resp = client.messages.create(
+                    model=CLASSIFY_MODEL,
+                    max_tokens=3500,
+                    system=[{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
+                    messages=[{"role": "user", "content": batch_text}],
                 )
-                text = response.content[0].text.strip()
-                parsed = parse_json_response(text)
+                parsed = parse_json_response(resp.content[0].text.strip())
+                classified = []
                 for item in parsed:
                     idx = item.get("idx", 0)
                     if 0 <= idx < len(batch):
-                        results.append({**batch[idx], **item})
-                print(f"    ✓ Batch {i//BATCH+1}/{(len(articles)-1)//BATCH+1} — {len(parsed)} classified")
-                break
+                        classified.append({**batch[idx], **item})
+                print(f"    ✓ Batch {batch_idx+1}/{n_batches} — {len(classified)} classified")
+                return batch_idx, classified
             except Exception as e:
-                attempt += 1
-                if attempt < 2:
-                    print(f"    ✗ Batch parse error, retrying: {e}")
+                if attempt == 0:
+                    print(f"    ✗ Batch {batch_idx+1} retry: {e}")
                     time.sleep(1)
-                    continue
-                print(f"    ✗ Batch error: {e}")
-                for j, a in enumerate(batch):
-                    results.append({
+                else:
+                    print(f"    ✗ Batch {batch_idx+1} failed: {e}")
+                    return batch_idx, [{
                         **a,
-                        "category":          categories[-1],
-                        "urgency":           "routine",
-                        "headline":          a["title"],
-                        "summary":           a["snippet"],
-                        "implication":       "",
-                        "is_comment_period": bool(a.get("comment_deadline")),
-                    })
-                break
-        time.sleep(0.3)
+                        "category": categories[-1], "urgency": "routine",
+                        "headline": a["title"], "summary": a["snippet"],
+                        "implication": "", "is_comment_period": bool(a.get("comment_deadline")),
+                    } for a in batch]
+        return batch_idx, []
 
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {executor.submit(process_batch, i, b): i for i, b in enumerate(batches)}
+        for future in as_completed(futures):
+            idx, items = future.result()
+            results_map[idx] = items
+
+    results = []
+    for i in range(n_batches):
+        results.extend(results_map.get(i, []))
     return results
+
+def generate_category_notes(client, articles, edition, categories):
+    """Single API call — generates a 2-sentence summary for every active category."""
+    cat_groups = {}
+    for a in articles:
+        cat = a.get("category", "")
+        if cat and cat.upper() != "DISCARD" and cat in categories:
+            cat_groups.setdefault(cat, []).append(a)
+
+    if not cat_groups:
+        return {}
+
+    sections = []
+    for cat, arts in cat_groups.items():
+        headlines = [a.get("headline") or a.get("title", "") for a in arts[:6]]
+        sections.append(f"CATEGORY: {cat}\nHEADLINES: {' | '.join(h for h in headlines if h)}")
+
+    audience_map = {
+        "consulting": "compliance officers and healthcare executives",
+        "policy":     "healthcare policy professionals and legislative staff",
+    }
+    prompt = (
+        f"For each healthcare category below, write a 2-sentence summary of the key developments this week.\n"
+        f"Be specific to the actual headlines — avoid generic filler. "
+        f"Write for {audience_map.get(edition, 'healthcare professionals')}.\n\n"
+        + "\n".join(sections)
+        + '\n\nReturn a JSON object mapping the exact category name to its 2-sentence summary:\n'
+          '{"Exact Category Name": "Summary text.", ...}'
+    )
+
+    try:
+        resp = client.messages.create(
+            model=CLASSIFY_MODEL,
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        notes = parse_json_response(resp.content[0].text.strip())
+        count = len(notes) if isinstance(notes, dict) else 0
+        print(f"    ✓ {count} category notes generated")
+        return notes if isinstance(notes, dict) else {}
+    except Exception as e:
+        print(f"    ✗ Category notes error: {e}")
+        return {}
+
 
 def generate_editorial(client, articles, edition, week_of):
     print(f"  Generating {edition} editorial...")
@@ -303,7 +351,7 @@ Return a JSON object — no markdown:
 
     try:
         response = client.messages.create(
-            model=DEFAULT_MODEL,
+            model=EDITORIAL_MODEL,
             max_tokens=700,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -395,8 +443,8 @@ def main():
     if scraped:
         print(f"  Scraped at: {scraped[:19]}")
 
-    global DEFAULT_MODEL
-    DEFAULT_MODEL = args.model
+    global EDITORIAL_MODEL
+    EDITORIAL_MODEL = args.model
     client = Anthropic(api_key=anthropic_api_key)
 
     reg_pool = [a for a in articles if a.get("source_type") in ("regulatory", "both")][:60]
@@ -408,7 +456,7 @@ def main():
     print(f"\n  Consulting pool: {len(reg_pool)} articles")
     print(f"  Policy pool:     {len(pol_pool)} articles")
 
-    print("\n[1/3] Classifying...")
+    print("\n[1/4] Classifying...")
     consulting_raw = classify_articles(
         client, reg_pool, CONSULTING_CATEGORIES,
         "healthcare consultant",
@@ -426,7 +474,11 @@ def main():
 
     print(f"\n  After filter: {len(consulting_articles)} consulting, {len(policy_articles)} policy articles")
 
-    print("\n[2/3] Generating editorial...")
+    print("\n[2/4] Generating category notes...")
+    consulting_notes = generate_category_notes(client, consulting_articles, "consulting", CONSULTING_CATEGORIES)
+    policy_notes = generate_category_notes(client, policy_articles, "policy", POLICY_CATEGORIES)
+
+    print("\n[3/4] Generating editorial...")
     consulting_ed = generate_editorial(client, consulting_articles, "consulting", week_of)
     policy_ed = generate_editorial(client, policy_articles, "policy", week_of)
 
@@ -436,11 +488,13 @@ def main():
         "consulting": {
             **consulting_ed,
             "categories": CONSULTING_CATEGORIES,
+            "category_notes": consulting_notes,
             "articles": consulting_articles,
         },
         "policy": {
             **policy_ed,
             "categories": POLICY_CATEGORIES,
+            "category_notes": policy_notes,
             "articles": policy_articles,
         },
     }
@@ -451,7 +505,7 @@ def main():
         print(f"\n✗ Validation failed: {exc}")
         sys.exit(1)
 
-    print("\n[3/3] Publishing...")
+    print("\n[4/4] Publishing...")
     save_json(output, args.output)
     push_to_github(output, github_token, github_repo, args.output, args.no_push)
 
