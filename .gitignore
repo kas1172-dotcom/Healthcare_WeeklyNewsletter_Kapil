@@ -1,3 +1,10 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Intermediate pipeline artifact — regenerated every run
+raw_articles.json
+
+# Local tool directories
+.claude/
+.sixth/
