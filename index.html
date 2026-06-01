@@ -284,22 +284,65 @@ function setCat(c) {
 }
 
 // ── APPLY FILTERS ─────────────────────────────────────────────
-function buildEditorNoteText(data) {
+function buildEditorNoteText(data, filtered) {
   const timeframe = currentDays === 7 ? 'last 7 days' : currentDays === 30 ? 'last 30 days' : 'last 60 days';
-  const categoryLabel = currentCat === 'all' ? 'all categories' : currentCat;
   const editionLabel = currentEdition === 'policy' ? 'Policy edition' : 'Consulting edition';
-  const intro = currentCat === 'all'
-    ? `This ${editionLabel.toLowerCase()} highlights the most relevant developments across all categories from the ${timeframe}.`
-    : `This ${editionLabel.toLowerCase()} focuses on ${categoryLabel} developments from the ${timeframe}.`;
+  const selectionLabel = currentCat === 'all' ? 'all categories' : currentCat;
+
+  if (!filtered || filtered.length === 0) {
+    return `No articles match this view. Try expanding the date range or selecting a different category.`;
+  }
+
+  const total = filtered.length;
+  const urgencyCounts = filtered.reduce((acc, article) => {
+    const key = article.urgency || 'routine';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const categoryCounts = filtered.reduce((acc, article) => {
+    const cat = article.category || 'Unknown';
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sortedCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([cat]) => cat);
+
+  let summary = `This ${editionLabel.toLowerCase()} includes ${total} article${total === 1 ? '' : 's'} ${currentCat === 'all' ? 'across all categories' : 'for ' + selectionLabel} from the ${timeframe}.`;
+
+  if (urgencyCounts.urgent) {
+    summary += ` It highlights ${urgencyCounts.urgent} urgent item${urgencyCounts.urgent === 1 ? '' : 's'}`;
+    if (urgencyCounts.important || urgencyCounts.routine) {
+      summary += ` and ${urgencyCounts.important || 0} important item${urgencyCounts.important === 1 ? '' : 's'}`;
+    }
+    summary += '.';
+  } else if (urgencyCounts.important) {
+    summary += ` It highlights ${urgencyCounts.important} important item${urgencyCounts.important === 1 ? '' : 's'}.`;
+  }
+
+  if (sortedCategories.length > 0 && currentCat === 'all') {
+    summary += ` Top topics include ${sortedCategories.join(' and ')}.`;
+  }
+
+  if (filtered.length <= 3) {
+    const firstHeadline = filtered[0].headline || filtered[0].title || '';
+    if (firstHeadline) {
+      summary += ` Key story: ${firstHeadline}.`;
+    }
+  }
+
   const baseNote = data && data.editors_note ? ` ${data.editors_note}` : '';
-  return (intro + baseNote).trim();
+  return (summary + baseNote).trim();
 }
 
-function updateEditorNote() {
+function updateEditorNote(filtered) {
   const noteEl = document.getElementById('editors-note-text');
   if (!noteEl || !newsletterData) return;
   const data = newsletterData[currentEdition];
-  noteEl.textContent = buildEditorNoteText(data);
+  noteEl.textContent = buildEditorNoteText(data, filtered);
 }
 
 function applyFilters() {
@@ -357,7 +400,7 @@ function applyFilters() {
 
   // Update sidebar TOC counts
   updateSidebarTOC(filtered);
-  updateEditorNote();
+  updateEditorNote(filtered);
 }
 
 function renderFlatList(articles) {
