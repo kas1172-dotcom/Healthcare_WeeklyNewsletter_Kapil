@@ -39,6 +39,12 @@ jobs:
       - name: Install dependencies
         run: pip install requests feedparser anthropic beautifulsoup4
 
+      - name: Debug env setup
+        run: |
+          echo "ANTHROPIC_API_KEY set: ${ANTHROPIC_API_KEY:+yes}"
+          echo "CONGRESS_API_KEY set: ${CONGRESS_API_KEY:+yes}"
+          echo "GITHUB_REPO=${GITHUB_REPO}"
+
       - name: Scrape sources
         env:
           CONGRESS_API_KEY: ${{ secrets.CONGRESS_API_KEY }}
