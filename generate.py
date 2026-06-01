@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HealthPulse Intelligence — Step 2: Newsletter Generator
+Healthcare Regulatory & Policy Monitor — Step 2: Newsletter Generator
 =======================================================
 Reads raw_articles.json, classifies with Claude Sonnet,
 generates two newsletter editions, pushes to GitHub.
@@ -194,7 +194,7 @@ def require_env(name):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Generate HealthPulse newsletter JSON from raw articles")
+    parser = argparse.ArgumentParser(description="Generate Healthcare Regulatory & Policy Monitor newsletter JSON from raw articles")
     parser.add_argument("-i", "--input", default="raw_articles.json", help="raw articles input JSON file")
     parser.add_argument("-o", "--output", default="newsletter_data.json", help="newsletter JSON output file")
     parser.add_argument("-m", "--model", default=EDITORIAL_MODEL, help="Anthropic model for editorial generation")
@@ -337,7 +337,7 @@ def generate_editorial(client, articles, edition, week_of):
         "consulting": "healthcare strategy consultants, compliance officers, and healthcare executives",
         "policy":     "healthcare policy professionals, legislative staff, lobbyists, and government affairs leads",
     }
-    prompt = f"""You are the editor of HealthPulse {edition.title()}, a premium weekly newsletter for {audience_map[edition]}.
+    prompt = f"""You are the editor of Healthcare Regulatory & Policy Monitor ({edition.title()} Edition), a premium weekly newsletter for {audience_map[edition]}.
 
 Week of {week_of}. Top stories this week:
 {chr(10).join(top[:20])}
@@ -363,7 +363,7 @@ Return a JSON object — no markdown:
     except Exception as e:
         print(f"    ✗ Editorial error: {e}")
         return {
-            "subject_line":  f"HealthPulse {edition.title()} — {week_of}",
+            "subject_line":  f"Healthcare Regulatory & Policy Monitor — {edition.title()} — {week_of}",
             "theme_of_week": "Healthcare regulatory developments",
             "editors_note":  "This week's briefing covers the latest regulatory and policy developments.",
         }
@@ -425,7 +425,7 @@ def main():
     github_repo = os.environ.get("GITHUB_REPO") or os.environ.get("GITHUB_REPOSITORY")
 
     print("=" * 60)
-    print("  HealthPulse — Step 2: Newsletter Generator")
+    print("  Healthcare Regulatory & Policy Monitor — Step 2: Newsletter Generator")
     print("=" * 60)
 
     if not os.path.exists(args.input):

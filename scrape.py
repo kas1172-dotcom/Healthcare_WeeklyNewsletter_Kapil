@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HealthPulse Intelligence — Step 1: Scraper
+Healthcare Regulatory & Policy Monitor — Step 1: Scraper
 ===========================================
 Fetches all sources and saves raw_articles.json.
 No Anthropic API key needed. Run this first.
@@ -735,7 +735,7 @@ def fetch_all():
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Fetch HealthPulse raw article data")
+    parser = argparse.ArgumentParser(description="Fetch Healthcare Regulatory & Policy Monitor raw article data")
     parser.add_argument("-o", "--output", default="raw_articles.json", help="output JSON path")
     parser.add_argument("--days-back", type=int, default=DAYS_BACK, help="lookback window in days")
     parser.add_argument("--max-items", type=int, default=MAX_ITEMS, help="max items per feed")
@@ -750,7 +750,7 @@ def main():
     MAX_ITEMS = args.max_items
 
     print("=" * 60)
-    print("  HealthPulse — Step 1: Scraper")
+    print("  Healthcare Regulatory & Policy Monitor — Step 1: Scraper")
     print(f"  30+ sources, max {MAX_ITEMS} items per RSS feed")
     print(f"  Lookback: {DAYS_BACK} days")
     print("=" * 60)
@@ -797,7 +797,7 @@ def main():
 def test_sources():
     """Diagnostic mode: ping every source, print a pass/fail table."""
     print("=" * 64)
-    print("  HealthPulse — Source Diagnostic")
+    print("  Healthcare Regulatory & Policy Monitor — Source Diagnostic")
     print("=" * 64)
 
     # (label, type, url-or-None-for-api)

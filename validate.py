@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate HealthPulse raw and newsletter JSON output."""
+"""Validate Healthcare Regulatory & Policy Monitor raw and newsletter JSON output."""
 
 import argparse
 import json
@@ -86,7 +86,7 @@ def validate_newsletter(path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Validate HealthPulse JSON outputs")
+    parser = argparse.ArgumentParser(description="Validate Healthcare Regulatory & Policy Monitor JSON outputs")
     parser.add_argument("--raw", default="raw_articles.json", help="raw articles JSON file")
     parser.add_argument("--newsletter", default="newsletter_data.json", help="newsletter JSON file")
     args = parser.parse_args()

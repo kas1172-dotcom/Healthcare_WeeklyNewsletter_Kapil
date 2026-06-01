@@ -1,4 +1,4 @@
-# HealthPulse Intelligence — Automated Weekly Newsletter
+# Healthcare Regulatory & Policy Monitor — Automated Weekly Newsletter
 # =======================================================
 # This runs scrape.py + generate.py every Monday at 8am ET on GitHub's
 # servers, then commits the result. Your site updates with zero effort.
@@ -65,7 +65,7 @@ jobs:
 
       - name: Commit updated newsletter
         run: |
-          git config user.name  "HealthPulse Bot"
+          git config user.name  "Newsletter Bot"
           git config user.email "actions@github.com"
           # Ensure we have the latest remote changes to avoid non-fast-forward errors
           BRANCH=${GITHUB_REF#refs/heads/}
