@@ -30,6 +30,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -64,6 +67,14 @@ jobs:
         run: |
           git config user.name  "HealthPulse Bot"
           git config user.email "actions@github.com"
+          # Ensure we have the latest remote changes to avoid non-fast-forward errors
+          BRANCH=${GITHUB_REF#refs/heads/}
+          git fetch origin $BRANCH
+          git pull --rebase origin $BRANCH || true
           git add newsletter_data.json raw_articles.json
-          git diff --staged --quiet || git commit -m "Weekly newsletter update $(date +%Y-%m-%d)"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Weekly newsletter update $(date +%Y-%m-%d)"
+            git push origin HEAD:$BRANCH --force-with-lease
+          fi
