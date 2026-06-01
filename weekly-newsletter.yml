@@ -1,0 +1,58 @@
+# HealthPulse Intelligence — Automated Weekly Newsletter
+# =======================================================
+# This runs scrape.py + generate.py every Monday at 8am ET on GitHub's
+# servers, then commits the result. Your site updates with zero effort.
+#
+# SETUP (one time):
+#   1. In your repo, create folder: .github/workflows/
+#   2. Put this file there, named: weekly-newsletter.yml
+#   3. Go to repo Settings → Secrets and variables → Actions → New repository secret
+#      Add two secrets:
+#        ANTHROPIC_API_KEY   = your sk-ant-... key
+#        CONGRESS_API_KEY    = your congress.gov key
+#   4. Commit. It will run automatically every Monday, or trigger manually
+#      from the Actions tab → "Run workflow".
+
+name: Weekly Newsletter
+
+on:
+  schedule:
+    # 8:00 AM ET Monday = 12:00 UTC (13:00 UTC during daylight saving)
+    - cron: '0 12 * * 1'
+  workflow_dispatch:   # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write       # allows the action to commit newsletter_data.json
+
+jobs:
+  build-newsletter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests feedparser anthropic
+
+      - name: Scrape sources
+        env:
+          CONGRESS_API_KEY: ${{ secrets.CONGRESS_API_KEY }}
+        run: python scrape.py
+
+      - name: Generate newsletter
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python generate.py
+
+      - name: Commit updated newsletter
+        run: |
+          git config user.name  "HealthPulse Bot"
+          git config user.email "actions@github.com"
+          git add newsletter_data.json raw_articles.json
+          git diff --staged --quiet || git commit -m "Weekly newsletter update $(date +%Y-%m-%d)"
+          git push

@@ -7,484 +7,145 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ── RESET & BASE ───────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; scroll-behavior: smooth; }
-body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: #F7F6F3;
-  color: #1A1A1A;
-  line-height: 1.6;
-  min-height: 100vh;
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;line-height:1.6;min-height:100vh}
 
-/* ── MASTHEAD ───────────────────────────────────────────────── */
-.masthead {
-  background: #0C1A2E;
-  padding: 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
-}
-.masthead-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 60px;
-}
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-.brand-mark {
-  width: 32px;
-  height: 32px;
-  background: #0D9488;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.brand-mark svg { width: 18px; height: 18px; }
-.brand-name {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-.brand-name span {
-  color: #0D9488;
-  font-weight: 400;
-}
-.edition-switcher {
-  display: flex;
-  gap: 2px;
-  background: rgba(255,255,255,0.07);
-  border-radius: 8px;
-  padding: 3px;
-}
-.edition-btn {
-  height: 34px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  background: transparent;
-  color: rgba(255,255,255,0.5);
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.edition-btn.active {
-  background: #0D9488;
-  color: #fff;
-}
-.edition-btn:hover:not(.active) { color: rgba(255,255,255,0.85); }
+/* MASTHEAD */
+.masthead{background:#0C1A2E;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,0.3)}
+.masthead-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.brand-mark{width:32px;height:32px;background:#0D9488;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:18px;height:18px}
+.brand-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.01em}
+.brand-name span{color:#0D9488;font-weight:400}
+.edition-switcher{display:flex;gap:2px;background:rgba(255,255,255,0.07);border-radius:8px;padding:3px}
+.edition-btn{height:34px;padding:0 14px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,0.5);transition:all 0.15s;white-space:nowrap}
+.edition-btn.active{background:#0D9488;color:#fff}
+.edition-btn:hover:not(.active){color:rgba(255,255,255,0.85)}
 
-/* ── ISSUE HEADER ───────────────────────────────────────────── */
-.issue-header {
-  background: #0C1A2E;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  padding: 48px 24px 40px;
-  text-align: center;
-}
-.issue-meta {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #0D9488;
-  margin-bottom: 12px;
-}
-.issue-title {
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(28px, 4vw, 42px);
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.2;
-  max-width: 760px;
-  margin: 0 auto 16px;
-  letter-spacing: -0.02em;
-}
-.issue-theme {
-  font-size: 15px;
-  color: rgba(255,255,255,0.45);
-  font-style: italic;
-  max-width: 560px;
-  margin: 0 auto 20px;
-}
-.issue-dateline {
-  font-size: 12px;
-  color: rgba(255,255,255,0.25);
-  letter-spacing: 0.04em;
-}
+/* FILTER BAR */
+.filter-bar{background:#fff;border-bottom:1px solid #E8E6DF;position:sticky;top:60px;z-index:90}
+.filter-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:16px;height:50px;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:6px}
+.filter-label{font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#94A3B8;white-space:nowrap}
+.filter-btns{display:flex;gap:2px;background:#F1F5F9;border-radius:6px;padding:2px}
+.filter-btn{height:26px;padding:0 10px;border:none;border-radius:4px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;background:transparent;color:#64748B;transition:all 0.12s;white-space:nowrap}
+.filter-btn.active{background:#fff;color:#0C1A2E;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.filter-divider{width:1px;height:20px;background:#E2E8F0}
+.results-count{font-size:11px;color:#94A3B8;margin-left:auto}
 
-/* ── EDITORS NOTE ───────────────────────────────────────────── */
-.editors-note-wrap {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-.editors-note {
-  background: #fff;
-  border-left: 4px solid #0D9488;
-  border-radius: 0 8px 8px 0;
-  padding: 24px 28px;
-  margin: 32px 0 0;
-  position: relative;
-}
-.en-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #0D9488;
-  margin-bottom: 8px;
-}
-.en-text {
-  font-size: 15px;
-  line-height: 1.75;
-  color: #2D2D2D;
-}
+/* ISSUE HEADER */
+.issue-header{background:#0C1A2E;padding:48px 24px 40px;text-align:center}
+.issue-meta{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#0D9488;margin-bottom:12px}
+.issue-title{font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,40px);font-weight:700;color:#fff;line-height:1.2;max-width:760px;margin:0 auto 12px;letter-spacing:-0.02em}
+.issue-theme{font-size:14px;color:rgba(255,255,255,0.4);font-style:italic;max-width:560px;margin:0 auto 16px}
+.issue-dateline{font-size:11px;color:rgba(255,255,255,0.2);letter-spacing:0.04em}
 
-/* ── LAYOUT ─────────────────────────────────────────────────── */
-.page-body {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 24px 64px;
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 32px;
-  align-items: start;
-}
-@media (max-width: 860px) {
-  .page-body { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
-}
+/* EDITOR NOTE */
+.en-wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+.editors-note{background:#fff;border-left:4px solid #0D9488;border-radius:0 8px 8px 0;padding:20px 24px;margin:28px 0 0}
+.en-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0D9488;margin-bottom:6px}
+.en-text{font-size:14px;line-height:1.75;color:#2D2D2D}
 
-/* ── PRIORITY BANNER ────────────────────────────────────────── */
-.priority-banner {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  border-radius: 8px;
-  padding: 16px 20px;
-  margin-bottom: 28px;
-}
-.pb-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #DC2626;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.pb-item {
-  font-size: 13px;
-  color: #7F1D1D;
-  line-height: 1.5;
-  padding: 6px 0;
-  border-bottom: 1px solid #FCA5A5;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.pb-item:last-child { border-bottom: none; padding-bottom: 0; }
-.pb-item a { color: inherit; text-decoration: none; font-weight: 500; }
-.pb-item a:hover { text-decoration: underline; }
+/* LAYOUT */
+.page-body{max-width:1100px;margin:0 auto;padding:28px 24px 64px;display:grid;grid-template-columns:1fr 300px;gap:28px;align-items:start}
+@media(max-width:860px){.page-body{grid-template-columns:1fr}.sidebar{display:none}}
 
-/* ── CATEGORY SECTION ───────────────────────────────────────── */
-.cat-section { margin-bottom: 36px; }
-.cat-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #E5E3DC;
-}
-.cat-bar {
-  width: 4px;
-  height: 20px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.cat-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 17px;
-  font-weight: 600;
-  color: #1A1A1A;
-  flex: 1;
-}
-.cat-count {
-  font-size: 11px;
-  font-weight: 600;
-  color: #9C9A94;
-  background: #EDEBE4;
-  padding: 2px 9px;
-  border-radius: 100px;
-}
+/* PRIORITY BANNER */
+.priority-banner{background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:14px 18px;margin-bottom:24px}
+.pb-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#DC2626;margin-bottom:8px}
+.pb-item{font-size:13px;color:#7F1D1D;line-height:1.5;padding:5px 0;border-bottom:1px solid #FCA5A5;display:flex;align-items:flex-start;gap:8px}
+.pb-item:last-child{border-bottom:none;padding-bottom:0}
+.pb-item a{color:inherit;text-decoration:none;font-weight:500}
+.pb-item a:hover{text-decoration:underline}
 
-/* ── ARTICLE CARD ───────────────────────────────────────────── */
-.article-card {
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #E8E6DF;
-  margin-bottom: 10px;
-  overflow: hidden;
-  transition: box-shadow 0.15s, border-color 0.15s;
-}
-.article-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  border-color: #C8C6BF;
-}
-.card-inner {
-  display: flex;
-}
-.urgency-stripe {
-  width: 4px;
-  flex-shrink: 0;
-}
-.urgency-stripe.urgent   { background: #DC2626; }
-.urgency-stripe.important{ background: #D97706; }
-.urgency-stripe.routine  { background: #E8E6DF; }
-.card-body {
-  padding: 14px 18px;
-  flex: 1;
-  min-width: 0;
-}
-.card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-.card-headline {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1A1A1A;
-  line-height: 1.4;
-  flex: 1;
-}
-.card-headline a {
-  color: inherit;
-  text-decoration: none;
-}
-.card-headline a:hover { color: #0D9488; }
-.urgency-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 100px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.urgency-badge.urgent    { background: #FEF2F2; color: #DC2626; }
-.urgency-badge.important { background: #FFFBEB; color: #D97706; }
-.urgency-badge.routine   { display: none; }
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.source-pill {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 8px;
-  border-radius: 100px;
-  background: #F0EEE7;
-  color: #5C5A54;
-}
-.source-pill a {
-  color: inherit;
-  text-decoration: none;
-}
-.source-pill a:hover { color: #0D9488; }
-.doc-type-pill {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 8px;
-  border-radius: 100px;
-  background: rgba(13,148,136,0.1);
-  color: #0F766E;
-}
-.date-tag {
-  font-size: 10px;
-  color: #9C9A94;
-}
-.card-summary {
-  font-size: 13px;
-  color: #4A4A4A;
-  line-height: 1.65;
-  margin-bottom: 8px;
-}
-.card-implication {
-  font-size: 12px;
-  color: #0F766E;
-  background: rgba(13,148,136,0.07);
-  border-left: 3px solid #0D9488;
-  padding: 6px 10px;
-  border-radius: 0 4px 4px 0;
-  line-height: 1.5;
-}
-.card-implication strong {
-  font-weight: 600;
-}
-.comment-deadline {
-  font-size: 11px;
-  color: #B45309;
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
-  border-radius: 4px;
-  padding: 4px 8px;
-  margin-top: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
+/* SORT VIEW */
+.view-by-importance .cat-section{display:none}
+.view-by-importance .flat-list{display:block}
+.flat-list{display:none}
 
-/* ── SIDEBAR ─────────────────────────────────────────────────── */
-.sidebar { position: sticky; top: 76px; }
-.sidebar-card {
-  background: #fff;
-  border: 1px solid #E8E6DF;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-.sidebar-header {
-  padding: 12px 16px;
-  background: #0C1A2E;
-}
-.sidebar-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.7);
-}
-.sidebar-body { padding: 12px 16px; }
-.stat-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #F0EEE7;
-  font-size: 12px;
-}
-.stat-row:last-child { border-bottom: none; }
-.stat-label { color: #5C5A54; }
-.stat-val { font-weight: 600; color: #1A1A1A; }
-.comment-item {
-  padding: 10px 0;
-  border-bottom: 1px solid #F0EEE7;
-}
-.comment-item:last-child { border-bottom: none; }
-.comment-item-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: #1A1A1A;
-  line-height: 1.4;
-  margin-bottom: 3px;
-}
-.comment-item-title a { color: inherit; text-decoration: none; }
-.comment-item-title a:hover { color: #0D9488; }
-.comment-item-date {
-  font-size: 11px;
-  color: #B45309;
-  font-weight: 500;
-}
-.toc-item {
-  padding: 7px 0;
-  border-bottom: 1px solid #F0EEE7;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #3D3D3D;
-  cursor: pointer;
-  transition: color 0.12s;
-}
-.toc-item:last-child { border-bottom: none; }
-.toc-item:hover { color: #0D9488; }
-.toc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.toc-count { margin-left: auto; font-size: 11px; color: #9C9A94; }
+/* CATEGORY */
+.cat-section{margin-bottom:32px}
+.cat-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E5E3DC}
+.cat-bar{width:4px;height:18px;border-radius:2px;flex-shrink:0}
+.cat-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#1A1A1A;flex:1}
+.cat-count{font-size:10px;font-weight:600;color:#9C9A94;background:#EDEBE4;padding:1px 8px;border-radius:100px}
 
-/* ── FOOTER ──────────────────────────────────────────────────── */
-.site-footer {
-  background: #0C1A2E;
-  padding: 32px 24px;
-  text-align: center;
-  margin-top: 40px;
-}
-.footer-brand {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  color: #fff;
-  margin-bottom: 8px;
-}
-.footer-sub {
-  font-size: 12px;
-  color: rgba(255,255,255,0.3);
-  margin-bottom: 4px;
-}
+/* ARTICLE CARD */
+.article-card{background:#fff;border-radius:8px;border:1px solid #E8E6DF;margin-bottom:8px;overflow:hidden;transition:box-shadow 0.15s,border-color 0.15s}
+.article-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.07);border-color:#C8C6BF}
+.article-card[data-hidden="true"]{display:none}
+.card-inner{display:flex}
+.urgency-stripe{width:4px;flex-shrink:0}
+.urgency-stripe.urgent{background:#DC2626}
+.urgency-stripe.important{background:#D97706}
+.urgency-stripe.routine{background:#E8E6DF}
+.card-body{padding:12px 16px;flex:1;min-width:0}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:5px}
+.card-headline{font-size:13px;font-weight:600;color:#1A1A1A;line-height:1.4;flex:1}
+.card-headline a{color:inherit;text-decoration:none}
+.card-headline a:hover{color:#0D9488}
+.urgency-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;white-space:nowrap;flex-shrink:0}
+.urgency-badge.urgent{background:#FEF2F2;color:#DC2626}
+.urgency-badge.important{background:#FFFBEB;color:#D97706}
+.urgency-badge.routine{display:none}
+.card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.source-pill{font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;background:#F0EEE7;color:#5C5A54}
+.source-pill a{color:inherit;text-decoration:none}
+.source-pill a:hover{color:#0D9488}
+.doc-type-pill{font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;background:rgba(13,148,136,0.1);color:#0F766E}
+.date-tag{font-size:10px;color:#9C9A94}
+.cat-tag{font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;background:#EEF2FF;color:#4338CA}
+.card-summary{font-size:12px;color:#4A4A4A;line-height:1.65;margin-bottom:6px}
+.card-implication{font-size:11px;color:#0F766E;background:rgba(13,148,136,0.07);border-left:3px solid #0D9488;padding:5px 10px;border-radius:0 4px 4px 0;line-height:1.5}
+.card-implication strong{font-weight:600}
+.comment-deadline{font-size:10px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:4px;padding:3px 7px;margin-top:6px;display:inline-flex;align-items:center;gap:4px}
 
-/* ── LOADING / ERROR ─────────────────────────────────────────── */
-.loading-screen {
-  min-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  color: #5C5A54;
-}
-.loader {
-  width: 36px;
-  height: 36px;
-  border: 3px solid #E8E6DF;
-  border-top-color: #0D9488;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.error-screen {
-  max-width: 480px;
-  margin: 60px auto;
-  text-align: center;
-  padding: 0 24px;
-}
-.error-screen h2 { font-size: 20px; margin-bottom: 8px; color: #DC2626; }
-.error-screen p  { font-size: 14px; color: #5C5A54; line-height: 1.6; }
-.empty-cat {
-  font-size: 13px;
-  color: #9C9A94;
-  font-style: italic;
-  padding: 12px 0;
-}
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:48px 24px;color:#94A3B8}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.empty-msg{font-size:13px;line-height:1.6}
 
-/* ── UTILITIES ───────────────────────────────────────────────── */
-.hidden { display: none; }
+/* SIDEBAR */
+.sidebar{position:sticky;top:120px}
+.sidebar-card{background:#fff;border:1px solid #E8E6DF;border-radius:8px;overflow:hidden;margin-bottom:14px}
+.sidebar-header{padding:10px 14px;background:#0C1A2E}
+.sidebar-title{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6)}
+.sidebar-body{padding:10px 14px}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F0EEE7;font-size:12px}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:#5C5A54}
+.stat-val{font-weight:600;color:#1A1A1A}
+.comment-item{padding:8px 0;border-bottom:1px solid #F0EEE7}
+.comment-item:last-child{border-bottom:none}
+.comment-item-title{font-size:11px;font-weight:500;color:#1A1A1A;line-height:1.4;margin-bottom:2px}
+.comment-item-title a{color:inherit;text-decoration:none}
+.comment-item-title a:hover{color:#0D9488}
+.comment-item-date{font-size:10px;color:#B45309;font-weight:500}
+.toc-item{padding:6px 0;border-bottom:1px solid #F0EEE7;display:flex;align-items:center;gap:7px;font-size:11px;color:#3D3D3D;cursor:pointer;transition:color 0.12s}
+.toc-item:last-child{border-bottom:none}
+.toc-item:hover{color:#0D9488}
+.toc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.toc-count{margin-left:auto;font-size:10px;color:#9C9A94;font-weight:600}
+
+/* FOOTER */
+.site-footer{background:#0C1A2E;padding:28px 24px;text-align:center;margin-top:32px}
+.footer-brand{font-family:'Playfair Display',serif;font-size:17px;color:#fff;margin-bottom:6px}
+.footer-sub{font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:3px}
+
+/* LOADING / ERROR */
+.loading-screen{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#5C5A54}
+.loader{width:34px;height:34px;border:3px solid #E8E6DF;border-top-color:#0D9488;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-screen{max-width:480px;margin:60px auto;text-align:center;padding:0 24px}
+.error-screen h2{font-size:20px;margin-bottom:8px;color:#DC2626}
+.error-screen p{font-size:13px;color:#5C5A54;line-height:1.6}
+.hidden{display:none}
 </style>
 </head>
 <body>
 
-<!-- MASTHEAD -->
 <header class="masthead">
   <div class="masthead-inner">
     <a class="brand" href="#">
@@ -498,17 +159,42 @@ body {
       <span class="brand-name">HealthPulse <span>Intelligence</span></span>
     </a>
     <div class="edition-switcher">
-      <button class="edition-btn active" id="btn-consulting" onclick="switchEdition('consulting')">
-        📊 Consulting Edition
-      </button>
-      <button class="edition-btn" id="btn-policy" onclick="switchEdition('policy')">
-        🏛️ Policy Edition
-      </button>
+      <button class="edition-btn active" id="btn-consulting" onclick="switchEdition('consulting')">📊 Consulting</button>
+      <button class="edition-btn" id="btn-policy" onclick="switchEdition('policy')">🏛️ Policy</button>
     </div>
   </div>
 </header>
 
-<!-- MAIN CONTENT -->
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <div class="filter-group">
+      <span class="filter-label">Period</span>
+      <div class="filter-btns">
+        <button class="filter-btn active" id="days-7"  onclick="setDays(7)">Last 7 days</button>
+        <button class="filter-btn"        id="days-30" onclick="setDays(30)">Last 30 days</button>
+        <button class="filter-btn"        id="days-60" onclick="setDays(60)">Last 60 days</button>
+      </div>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Sort</span>
+      <div class="filter-btns">
+        <button class="filter-btn active" id="sort-category"   onclick="setSort('category')">By Category</button>
+        <button class="filter-btn"        id="sort-importance" onclick="setSort('importance')">By Importance</button>
+      </div>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Category</span>
+      <div class="filter-btns" id="cat-filter-btns">
+        <button class="filter-btn active" id="cat-all" onclick="setCat('all')">All</button>
+      </div>
+    </div>
+    <span class="results-count" id="results-count"></span>
+  </div>
+</div>
+
 <main id="main-content">
   <div class="loading-screen" id="loading">
     <div class="loader"></div>
@@ -516,7 +202,7 @@ body {
   </div>
   <div class="error-screen hidden" id="error">
     <h2>Newsletter not yet generated</h2>
-    <p>Run <code>scraper.py</code> to fetch this week's content and push it to GitHub. The newsletter will appear here automatically once the data file is published.</p>
+    <p>Run <code>scraper.py</code> to fetch content and push <code>newsletter_data.json</code> to your GitHub repo. The newsletter appears here automatically once the data file is published.</p>
   </div>
   <div id="content" class="hidden"></div>
 </main>
@@ -528,159 +214,245 @@ body {
 </footer>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-// Update DATA_URL to point to your newsletter_data.json on GitHub
-// e.g. https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/newsletter_data.json
-// or leave as "./newsletter_data.json" to serve from the same folder
 const DATA_URL = './newsletter_data.json';
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let newsletterData = null;
-let currentEdition = 'consulting';
-
-// Category colors — maps to a teal/navy palette
 const CAT_COLORS = [
   '#0D9488','#0F766E','#0891B2','#0E7490','#7C3AED',
   '#6D28D9','#B45309','#92400E','#DC2626','#9F1239',
-  '#064E3B','#1E40AF',
+  '#064E3B','#1E40AF','#065F46','#0369A1',
 ];
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+let newsletterData = null;
+let currentEdition  = 'consulting';
+let currentDays     = 7;
+let currentSort     = 'category';
+let currentCat      = 'all';
+let allArticles     = [];   // full unfiltered set for current edition
+
+// ── INIT ──────────────────────────────────────────────────────
 async function init() {
   try {
     const r = await fetch(DATA_URL + '?t=' + Date.now());
-    if (!r.ok) throw new Error('Data file not found');
+    if (!r.ok) throw new Error('not found');
     newsletterData = await r.json();
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.remove('hidden');
-    renderEdition(currentEdition);
-  } catch (e) {
+    renderEdition('consulting');
+  } catch(e) {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('error').classList.remove('hidden');
   }
 }
 
+// ── SWITCH EDITION ────────────────────────────────────────────
 function switchEdition(ed) {
   currentEdition = ed;
-  document.getElementById('btn-consulting').classList.toggle('active', ed === 'consulting');
-  document.getElementById('btn-policy').classList.toggle('active', ed === 'policy');
+  currentCat = 'all';
+  document.getElementById('btn-consulting').classList.toggle('active', ed==='consulting');
+  document.getElementById('btn-policy').classList.toggle('active', ed==='policy');
   renderEdition(ed);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
+// ── FILTER CONTROLS ───────────────────────────────────────────
+function setDays(d) {
+  currentDays = d;
+  [7,30,60].forEach(n => document.getElementById('days-'+n).classList.toggle('active', n===d));
+  applyFilters();
+}
+
+function setSort(s) {
+  currentSort = s;
+  ['category','importance'].forEach(n => document.getElementById('sort-'+n).classList.toggle('active', n===s));
+  applyFilters();
+}
+
+function setCat(c) {
+  currentCat = c;
+  document.querySelectorAll('#cat-filter-btns .filter-btn').forEach(b => {
+    b.classList.toggle('active', b.id === 'cat-'+(c==='all'?'all':c.replace(/\W+/g,'-').toLowerCase()));
+  });
+  applyFilters();
+}
+
+// ── APPLY FILTERS ─────────────────────────────────────────────
+function applyFilters() {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - currentDays);
+
+  // Filter by date and category
+  let filtered = allArticles.filter(a => {
+    const pub = new Date(a.published_iso || a.published || '2000-01-01');
+    if (pub < cutoff) return false;
+    if (currentCat !== 'all' && a.category !== currentCat) return false;
+    return true;
+  });
+
+  // Update count
+  document.getElementById('results-count').textContent =
+    filtered.length + ' article' + (filtered.length !== 1 ? 's' : '');
+
+  // Show/hide cards
+  document.querySelectorAll('.article-card').forEach(el => {
+    const id = el.dataset.id;
+    const art = allArticles.find(a => a._id === id);
+    if (!art) { el.style.display='none'; return; }
+    const pub = new Date(art.published_iso || art.published || '2000-01-01');
+    const inDate = pub >= cutoff;
+    const inCat  = currentCat === 'all' || art.category === currentCat;
+    el.style.display = (inDate && inCat) ? '' : 'none';
+  });
+
+  // Show/hide category sections (by-category view)
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    const visibleCards = sec.querySelectorAll('.article-card:not([style*="display: none"])');
+    sec.style.display = visibleCards.length > 0 ? '' : 'none';
+    // Update count badge
+    const badge = sec.querySelector('.cat-count');
+    if (badge) badge.textContent = visibleCards.length;
+  });
+
+  // Sort view
+  const mainCol = document.getElementById('main-col');
+  if (!mainCol) return;
+  if (currentSort === 'importance') {
+    mainCol.classList.add('view-by-importance');
+    renderFlatList(filtered);
+  } else {
+    mainCol.classList.remove('view-by-importance');
+    const flatList = document.getElementById('flat-list');
+    if (flatList) flatList.style.display = 'none';
+  }
+
+  // Update sidebar TOC counts
+  updateSidebarTOC(filtered);
+}
+
+function renderFlatList(articles) {
+  let flatList = document.getElementById('flat-list');
+  if (!flatList) {
+    flatList = document.createElement('div');
+    flatList.id = 'flat-list';
+    const mainCol = document.getElementById('main-col');
+    mainCol.appendChild(flatList);
+  }
+  flatList.style.display = '';
+
+  const urgOrder = {urgent:0,important:1,routine:2};
+  const sorted = [...articles].sort((a,b) =>
+    (urgOrder[a.urgency]||2) - (urgOrder[b.urgency]||2)
+  );
+
+  flatList.innerHTML = sorted.map(a => buildCardHTML(a, true)).join('');
+}
+
+function updateSidebarTOC(filtered) {
+  const counts = {};
+  filtered.forEach(a => { counts[a.category] = (counts[a.category]||0)+1; });
+  document.querySelectorAll('.toc-item').forEach(el => {
+    const cat = el.dataset.cat;
+    const count = counts[cat] || 0;
+    el.style.display = count > 0 ? '' : 'none';
+    const badge = el.querySelector('.toc-count');
+    if (badge) badge.textContent = count;
+  });
+}
+
+// ── RENDER EDITION ────────────────────────────────────────────
 function renderEdition(ed) {
   const data = newsletterData[ed];
   if (!data) return;
 
-  const editionLabel = ed === 'consulting' ? 'Consulting Edition' : 'Policy Edition';
-  const genDate = new Date(newsletterData.generated_at);
-  const dateStr = genDate.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  allArticles = (data.articles || []).map((a, i) => ({...a, _id: String(i)}));
 
-  // Group articles by category, sorted by urgency
-  const grouped = {};
-  (data.categories || []).forEach(c => grouped[c] = []);
-  (data.articles || []).forEach(a => {
-    const cat = grouped[a.category] ? a.category : data.categories[data.categories.length - 1];
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(a);
+  // Build dynamic category list from actual articles
+  const catSet = [];
+  allArticles.forEach(a => {
+    if (a.category && !catSet.includes(a.category)) catSet.push(a.category);
   });
-  const urgencyOrder = { urgent: 0, important: 1, routine: 2 };
-  Object.values(grouped).forEach(arr => arr.sort((a,b) => (urgencyOrder[a.urgency]||2)-(urgencyOrder[b.urgency]||2)));
 
-  // Priority items — urgent articles across all categories
-  const urgentItems = (data.articles || []).filter(a => a.urgency === 'urgent').slice(0, 4);
+  const edLabel  = ed === 'consulting' ? 'Consulting Edition' : 'Policy Edition';
+  const genDate  = new Date(newsletterData.generated_at);
+  const dateStr  = genDate.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('footer-date').textContent = 'Updated ' + dateStr;
 
-  // Comment periods open
-  const commentItems = (data.articles || []).filter(a => a.is_comment_period && a.comment_deadline).slice(0, 5);
+  // Build category filter pills dynamically
+  const catBtns = document.getElementById('cat-filter-btns');
+  catBtns.innerHTML = '<button class="filter-btn active" id="cat-all" onclick="setCat(\'all\')">All</button>';
+  catSet.forEach(cat => {
+    const btn = document.createElement('button');
+    const slug = cat.replace(/\W+/g,'-').toLowerCase();
+    btn.className = 'filter-btn';
+    btn.id = 'cat-' + slug;
+    btn.textContent = cat;
+    btn.onclick = () => setCat(cat);
+    catBtns.appendChild(btn);
+  });
 
-  // Stats
-  const totalArticles = (data.articles || []).length;
-  const urgentCount   = (data.articles || []).filter(a => a.urgency === 'urgent').length;
-  const importantCount = (data.articles || []).filter(a => a.urgency === 'important').length;
-  const activeCats    = Object.values(grouped).filter(a => a.length > 0).length;
+  // Group articles by category
+  const grouped = {};
+  catSet.forEach(c => grouped[c] = []);
+  allArticles.forEach(a => {
+    if (!grouped[a.category]) grouped[a.category] = [];
+    grouped[a.category].push(a);
+  });
+  const urgOrder = {urgent:0,important:1,routine:2};
+  Object.values(grouped).forEach(arr =>
+    arr.sort((a,b) => (urgOrder[a.urgency]||2)-(urgOrder[b.urgency]||2))
+  );
 
-  document.getElementById('footer-date').textContent = `Updated ${dateStr}`;
+  const urgentItems = allArticles.filter(a => a.urgency === 'urgent').slice(0,4);
+  const commentItems = allArticles.filter(a => a.is_comment_period && a.comment_deadline).slice(0,6);
 
-  // Build HTML
+  const totalAll   = allArticles.length;
+  const urgentAll  = allArticles.filter(a=>a.urgency==='urgent').length;
+  const importAll  = allArticles.filter(a=>a.urgency==='important').length;
+
   let html = '';
 
   // Issue header
   html += `
 <div class="issue-header">
-  <div class="issue-meta">${editionLabel} &nbsp;·&nbsp; Week of ${newsletterData.week_of}</div>
-  <h1 class="issue-title">${esc(data.subject_line || 'Healthcare Intelligence Briefing')}</h1>
-  <p class="issue-theme">${esc(data.theme_of_week || '')}</p>
+  <div class="issue-meta">${edLabel} &nbsp;·&nbsp; Week of ${newsletterData.week_of}</div>
+  <h1 class="issue-title">${esc(data.subject_line||'Healthcare Intelligence Briefing')}</h1>
+  <p class="issue-theme">${esc(data.theme_of_week||'')}</p>
   <div class="issue-dateline">Updated ${dateStr}</div>
-</div>`;
-
-  // Editor's note
-  html += `
-<div class="editors-note-wrap">
+</div>
+<div class="en-wrap">
   <div class="editors-note">
     <div class="en-label">Editor's Note</div>
-    <p class="en-text">${esc(data.editors_note || '')}</p>
+    <p class="en-text">${esc(data.editors_note||'')}</p>
   </div>
 </div>`;
 
-  // Page body — main + sidebar
-  html += `<div class="page-body"><div class="main-col">`;
+  // Page body
+  html += `<div class="page-body"><div class="main-col" id="main-col">`;
 
   // Priority banner
   if (urgentItems.length > 0) {
     html += `<div class="priority-banner">
-  <div class="pb-label">🔴 Priority Items This Week</div>`;
+  <div class="pb-label">🔴 Priority Items</div>`;
     urgentItems.forEach(a => {
-      html += `<div class="pb-item">
-    <span>▸</span>
-    <span><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a>
-    — ${esc(a.implication || '')}</span>
-  </div>`;
+      html += `<div class="pb-item"><span>▸</span>
+    <span><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a>
+    ${a.implication?'— '+esc(a.implication):''}</span></div>`;
     });
     html += `</div>`;
   }
 
   // Category sections
-  (data.categories || []).forEach((cat, catIdx) => {
+  catSet.forEach((cat, catIdx) => {
     const articles = grouped[cat];
-    if (!articles || articles.length === 0) return;
+    if (!articles||!articles.length) return;
     const color = CAT_COLORS[catIdx % CAT_COLORS.length];
-    const catId = 'cat-' + catIdx;
-
-    html += `<div class="cat-section" id="${catId}">
+    html += `<div class="cat-section" id="cat-sec-${catIdx}">
   <div class="cat-header">
     <div class="cat-bar" style="background:${color}"></div>
     <h2 class="cat-title">${esc(cat)}</h2>
     <span class="cat-count">${articles.length}</span>
   </div>`;
-
-    articles.forEach(a => {
-      const pubDate = a.published ? new Date(a.published).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
-      html += `
-  <div class="article-card">
-    <div class="card-inner">
-      <div class="urgency-stripe ${a.urgency || 'routine'}"></div>
-      <div class="card-body">
-        <div class="card-top">
-          <div class="card-headline">
-            <a href="${esc(a.url || '#')}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a>
-          </div>
-          ${a.urgency === 'urgent' ? '<span class="urgency-badge urgent">🔴 Urgent</span>' : a.urgency === 'important' ? '<span class="urgency-badge important">🟡 Important</span>' : ''}
-        </div>
-        <div class="card-meta">
-          <span class="source-pill"><a href="${esc(a.source_url || '#')}" target="_blank" rel="noopener">${esc(a.source_name || '')}</a></span>
-          ${a.doc_type ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
-          ${pubDate ? `<span class="date-tag">${pubDate}</span>` : ''}
-        </div>
-        ${a.summary ? `<p class="card-summary">${esc(a.summary)}</p>` : ''}
-        ${a.implication ? `<div class="card-implication"><strong>Key takeaway:</strong> ${esc(a.implication)}</div>` : ''}
-        ${a.comment_deadline ? `<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>` : ''}
-      </div>
-    </div>
-  </div>`;
-    });
-
-    html += `</div>`; // end cat-section
+    articles.forEach(a => { html += buildCardHTML(a, false); });
+    html += `</div>`;
   });
 
   html += `</div>`; // end main-col
@@ -688,65 +460,87 @@ function renderEdition(ed) {
   // Sidebar
   html += `<aside class="sidebar">`;
 
-  // Stats card
+  // Stats
   html += `<div class="sidebar-card">
-  <div class="sidebar-header"><div class="sidebar-title">This Week's Briefing</div></div>
+  <div class="sidebar-header"><div class="sidebar-title">This Issue</div></div>
   <div class="sidebar-body">
-    <div class="stat-row"><span class="stat-label">Total articles</span><span class="stat-val">${totalArticles}</span></div>
-    <div class="stat-row"><span class="stat-label">Priority items</span><span class="stat-val" style="color:#DC2626">${urgentCount}</span></div>
-    <div class="stat-row"><span class="stat-label">Notable items</span><span class="stat-val" style="color:#D97706">${importantCount}</span></div>
-    <div class="stat-row"><span class="stat-label">Topic areas</span><span class="stat-val">${activeCats}</span></div>
+    <div class="stat-row"><span class="stat-label">Total articles</span><span class="stat-val">${totalAll}</span></div>
+    <div class="stat-row"><span class="stat-label">Priority</span><span class="stat-val" style="color:#DC2626">${urgentAll}</span></div>
+    <div class="stat-row"><span class="stat-label">Notable</span><span class="stat-val" style="color:#D97706">${importAll}</span></div>
+    <div class="stat-row"><span class="stat-label">Categories</span><span class="stat-val">${catSet.length}</span></div>
     <div class="stat-row"><span class="stat-label">Week of</span><span class="stat-val">${newsletterData.week_of}</span></div>
   </div>
 </div>`;
 
-  // Comment periods card
+  // Comment periods
   if (commentItems.length > 0) {
     html += `<div class="sidebar-card">
   <div class="sidebar-header"><div class="sidebar-title">📋 Comment Periods Open</div></div>
   <div class="sidebar-body">`;
     commentItems.forEach(a => {
       html += `<div class="comment-item">
-    <div class="comment-item-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a></div>
-    ${a.comment_deadline ? `<div class="comment-item-date">Closes: ${esc(a.comment_deadline)}</div>` : '<div class="comment-item-date">Comment period open</div>'}
+    <div class="comment-item-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
+    <div class="comment-item-date">Closes: ${esc(a.comment_deadline)}</div>
   </div>`;
     });
     html += `</div></div>`;
   }
 
-  // TOC card
+  // TOC
   html += `<div class="sidebar-card">
   <div class="sidebar-header"><div class="sidebar-title">In This Issue</div></div>
   <div class="sidebar-body">`;
-  (data.categories || []).forEach((cat, catIdx) => {
-    const articles = grouped[cat];
-    if (!articles || !articles.length) return;
+  catSet.forEach((cat, catIdx) => {
     const color = CAT_COLORS[catIdx % CAT_COLORS.length];
-    html += `<div class="toc-item" onclick="scrollToCat('cat-${catIdx}')">
+    html += `<div class="toc-item" data-cat="${esc(cat)}" onclick="scrollToCat('cat-sec-${catIdx}')">
     <span class="toc-dot" style="background:${color}"></span>
     <span>${esc(cat)}</span>
-    <span class="toc-count">${articles.length}</span>
+    <span class="toc-count">${grouped[cat].length}</span>
   </div>`;
   });
   html += `</div></div>`;
 
-  html += `</aside>`; // end sidebar
-  html += `</div>`; // end page-body
+  html += `</aside></div>`; // end sidebar + page-body
 
   document.getElementById('content').innerHTML = html;
+
+  // Apply default filter (7 days)
+  currentCat = 'all';
+  applyFilters();
+}
+
+function buildCardHTML(a, showCatTag) {
+  const pub = a.published ? new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+  const urg = a.urgency || 'routine';
+  return `<div class="article-card" data-id="${esc(a._id||'')}">
+  <div class="card-inner">
+    <div class="urgency-stripe ${urg}"></div>
+    <div class="card-body">
+      <div class="card-top">
+        <div class="card-headline"><a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
+        ${urg==='urgent'?'<span class="urgency-badge urgent">🔴 Urgent</span>':urg==='important'?'<span class="urgency-badge important">🟡 Important</span>':''}
+      </div>
+      <div class="card-meta">
+        <span class="source-pill"><a href="${esc(a.source_url||'#')}" target="_blank" rel="noopener">${esc((a.source_name||'').split('—')[0].trim())}</a></span>
+        ${a.doc_type?`<span class="doc-type-pill">${esc(a.doc_type)}</span>`:''}
+        ${pub?`<span class="date-tag">${pub}</span>`:''}
+        ${showCatTag&&a.category?`<span class="cat-tag">${esc(a.category)}</span>`:''}
+      </div>
+      ${a.summary?`<p class="card-summary">${esc(a.summary)}</p>`:''}
+      ${a.implication?`<div class="card-implication"><strong>Key takeaway:</strong> ${esc(a.implication)}</div>`:''}
+      ${a.comment_deadline?`<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>`:''}
+    </div>
+  </div>
+</div>`;
 }
 
 function scrollToCat(id) {
   const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function esc(str) {
-  return (str || '')
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 init();
