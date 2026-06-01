@@ -37,14 +37,12 @@ SESSION.headers.update({
     "Accept-Encoding": "gzip, deflate, br",
     "Cache-Control":   "no-cache",
 })
+# Simplified retry strategy to avoid recursion issues
 retry_strategy = Retry(
-    total=3,
-    connect=3,
-    read=3,
-    status=3,
-    backoff_factor=0.8,
+    total=2,
+    backoff_factor=1.0,
     status_forcelist=[429, 500, 502, 503, 504],
-    allowed_methods=["HEAD", "GET", "OPTIONS"],
+    allowed_methods=["HEAD", "GET"],
 )
 SESSION.mount("https://", HTTPAdapter(max_retries=retry_strategy))
 SESSION.mount("http://", HTTPAdapter(max_retries=retry_strategy))
@@ -168,7 +166,7 @@ def normalize_url(url):
 
 def get_url(url, timeout=15, **kwargs):
     try:
-        return get_url(url, timeout=timeout, **kwargs)
+        return SESSION.get(url, timeout=timeout, **kwargs)
     except requests.RequestException:
         return None
 
