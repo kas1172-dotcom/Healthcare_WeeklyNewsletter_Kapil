@@ -9,15 +9,16 @@ An automated weekly briefing that tracks 30+ healthcare regulatory and policy so
 ## How it works
 
 ```
-pipeline/scrape.py   →   raw_articles.json   →   pipeline/generate.py   →   newsletter_data.json   →   index.html
+pipeline/scrape.py → raw_articles.json → pipeline/generate.py → newsletter_data.json (+ newsletter_archive.json) → index.html
 ```
 
-1. **Scrape** — fetches government APIs and RSS feeds in parallel, deduplicates, and saves to `raw_articles.json`
-2. **Classify** — tags each article with a category, urgency level, headline, summary, and implication
+1. **Scrape** — fetches government APIs and RSS feeds in parallel, extracts the real publication date for each item (marking any it can't resolve as *date unknown* rather than faking it), stamps a discovery date, deduplicates, and saves to `raw_articles.json`
+2. **Classify** — tags each article with a category, urgency tier, a 0–100 importance score, audience-specific relevance scores, a specific "so what / now what" analysis, calibrated uncertainty, and — for policy items — a balanced multi-stakeholder read (who benefits, who bears the cost, the case each side makes)
 3. **Synthesize** — generates an editor's note and theme of the week for each edition
-4. **Publish** — commits `newsletter_data.json` to the repo; GitHub Pages serves the static frontend
+4. **Archive & diff** — appends the run to `newsletter_archive.json` (a rolling history, capped at the last 26 runs ≈ 6 months), then computes a *"what's new since last run"* digest for each edition
+5. **Publish** — commits `newsletter_data.json` and `newsletter_archive.json`; GitHub Pages serves the static frontend
 
-The GitHub Actions workflow runs every Monday at 8am ET. You can also trigger it manually from the Actions tab.
+The GitHub Actions workflow runs automatically every Monday (13:00 UTC = 8am EST / 9am EDT). You can also trigger it manually from the Actions tab.
 
 ---
 
@@ -86,9 +87,10 @@ Open `index.html` directly in a browser to preview the result.
 │   ├── scrape.py                   # Fetches all sources → raw_articles.json
 │   ├── generate.py                 # Classifies + synthesizes → newsletter_data.json
 │   └── validate.py                 # Validates both JSON outputs
-├── index.html                      # Main newsletter frontend (GitHub Pages)
+├── index.html                      # Main dashboard frontend (GitHub Pages)
 ├── how-it-works.html               # Pipeline documentation page
-└── newsletter_data.json            # Generated data file (auto-updated weekly)
+├── newsletter_data.json            # Current edition data (auto-updated weekly)
+└── newsletter_archive.json         # Rolling run history → powers "what's new"
 ```
 
 ---
@@ -129,3 +131,5 @@ Open `index.html` directly in a browser to preview the result.
 | Adjust lookback window | `python pipeline/scrape.py --days-back 14` |
 | Change run schedule | `.github/workflows/weekly-newsletter.yml` → `cron:` |
 | Disable auto-push | `python pipeline/generate.py --no-push` |
+| Archive retention (runs kept) | `pipeline/generate.py` → `ARCHIVE_MAX_RUNS` (or env var) |
+| Max articles classified per edition | `pipeline/generate.py` → `MAX_ARTICLES_PER_EDITION` (or env var) |
