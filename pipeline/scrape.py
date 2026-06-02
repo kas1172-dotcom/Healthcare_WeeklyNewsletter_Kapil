@@ -141,12 +141,15 @@ def is_health(text):
 
 def make_item(title, url, published, source_name, source_url,
               snippet="", doc_type="", comment_deadline="", source_type="regulatory"):
-    pub_str = (published or "")[:10] or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    pub_str = (published or "").strip()[:10]
+    # Never fall back to today — unknown is unknown.
+    # discovery_date is injected by main() after all fetching completes.
     return {
         "title":            title,
         "url":              url,
         "published":        pub_str,
         "published_iso":    pub_str,
+        "date_unknown":     not bool(pub_str),
         "source_name":      source_name,
         "source_url":       source_url,
         "snippet":          snippet[:600],
@@ -165,6 +168,93 @@ def normalize_url(url):
         return normalized
     except Exception:
         return url
+
+
+# ── DATE HELPERS ──────────────────────────────────────────────────────────────
+
+def _parse_date_text(text):
+    """Parse a date from free text. Returns 'YYYY-MM-DD' or ''."""
+    if not text:
+        return ""
+    # ISO format
+    m = re.search(r'(\d{4}-\d{2}-\d{2})', text)
+    if m:
+        return m.group(1)
+    # "Month DD, YYYY" or "Month DD YYYY"
+    m = re.search(
+        r'(January|February|March|April|May|June|July|August|September|October|November|December)'
+        r'\s+(\d{1,2}),?\s+(\d{4})',
+        text, re.I,
+    )
+    if m:
+        try:
+            return datetime.strptime(f"{m.group(1)} {m.group(2)} {m.group(3)}", "%B %d %Y").strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+    # MM/DD/YYYY
+    m = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', text)
+    if m:
+        try:
+            return datetime.strptime(f"{m.group(1)}/{m.group(2)}/{m.group(3)}", "%m/%d/%Y").strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+    return ""
+
+
+def _date_from_url(url):
+    """Extract a date from a URL path like /YYYY/MM/DD/ or /YYYY/MM/. Returns 'YYYY-MM-DD' or ''."""
+    if not url:
+        return ""
+    m = re.search(r'/(\d{4})/(\d{2})(?:/(\d{2}))?', url)
+    if m:
+        year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3) or 1)
+        try:
+            dt = datetime(year, month, day)
+            if datetime(2000, 1, 1) <= dt <= datetime.now():
+                return dt.strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+    return ""
+
+
+def _find_date_near_element(el):
+    """
+    Search for a publication date near a BeautifulSoup anchor element.
+    Strategy (in order of reliability):
+      1. URL path — OIG/CMS URLs embed YYYY/MM/DD
+      2. <time datetime="..."> in ancestor subtrees (up to 3 levels up)
+      3. Date-like text in direct children of ancestors
+    Returns 'YYYY-MM-DD' or '' if nothing is found (caller sets date_unknown).
+    """
+    # 1. URL path is the most reliable signal for OIG (/fraud/enforcement/YYYY/MM/title/)
+    href = el.get("href", "")
+    d = _date_from_url(href)
+    if d:
+        return d
+
+    # 2. Walk up to 3 ancestor levels
+    node = el
+    for _ in range(3):
+        node = getattr(node, "parent", None)
+        if node is None:
+            break
+        # Look for <time datetime="YYYY-MM-DD">
+        for time_el in node.find_all("time", recursive=True):
+            dt_attr = time_el.get("datetime", "")
+            if re.match(r'\d{4}-\d{2}-\d{2}', dt_attr):
+                return dt_attr[:10]
+            d = _parse_date_text(time_el.get_text(strip=True))
+            if d:
+                return d
+        # Date-like text in direct children
+        for child in node.children:
+            text = (child.get_text(strip=True) if hasattr(child, "get_text") else str(child).strip())
+            if len(text) < 5 or len(text) > 80:
+                continue
+            d = _parse_date_text(text)
+            if d:
+                return d
+    return ""
 
 
 def get_url(url, timeout=15, **kwargs):
@@ -201,9 +291,12 @@ def fetch_rss(name, urls_or_url, source_type, health_filter=False, date_filter=T
                             break
                         except Exception:
                             pass
-                pub = pub or datetime.now(timezone.utc)
-                if date_filter and pub < cutoff_dt:
+                # Skip only if we have a real date and it's outside the lookback window.
+                # Items with no parseable date are kept (date_unknown=True); they are NOT
+                # silently passed through date filters in the frontend.
+                if pub is not None and date_filter and pub < cutoff_dt:
                     continue
+                pub_date_str = pub.strftime("%Y-%m-%d") if pub is not None else ""
                 snippet = ""
                 if hasattr(entry, "summary"):
                     snippet = strip_html(entry.summary)
@@ -216,7 +309,7 @@ def fetch_rss(name, urls_or_url, source_type, health_filter=False, date_filter=T
                 if health_filter and not is_health(title + " " + snippet):
                     continue
                 items.append(make_item(
-                    title, link, pub.strftime("%Y-%m-%d"),
+                    title, link, pub_date_str,
                     feed_title, feed_link, snippet, "", "", source_type
                 ))
             if items or not date_filter:
@@ -334,7 +427,7 @@ def fetch_congress_bills():
                     items.append(make_item(
                         f"[{name}] {title}",
                         url,
-                        datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                        "",   # committee bill list API doesn't expose a reliable date
                         f"Congress.gov — {name}",
                         "https://www.congress.gov",
                         f"Bill referred to or active in {name}.",
@@ -456,9 +549,17 @@ def fetch_fda_api():
         )
         if r.status_code == 200:
             for d in r.json().get("results",[]):
+                # Each recall needs a unique URL — the generic recalls page collapses all
+                # of them to one entry during dedup. Use the recall number as the key.
+                recall_num = (d.get("recall_number") or "").replace("/", "-").replace(" ", "-")
+                recall_url = (
+                    f"https://www.accessdata.fda.gov/scripts/ires/?Product={recall_num}"
+                    if recall_num
+                    else "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts"
+                )
                 items.append(make_item(
                     f"FDA Drug Recall: {d.get('product_description','')[:80]} — {d.get('recalling_firm','')}",
-                    "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts",
+                    recall_url,
                     (d.get("report_date") or "")[:10],
                     "FDA — Drug Recalls", "https://www.fda.gov",
                     f"Reason: {d.get('reason_for_recall','')[:300]}. Class: {d.get('classification','')}.",
@@ -484,22 +585,24 @@ def fetch_oig_enforcement():
             if not title or len(title) < 10 or not href:
                 continue
             url = href if href.startswith("http") else "https://oig.hhs.gov" + href
-            entries.append((title, url))
+            date_str = _find_date_near_element(a)
+            entries.append((title, url, date_str))
 
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         seen, items = set(), []
-        for title, url in entries:
+        for title, url, date_str in entries:
             if url in seen:
                 continue
             seen.add(url)
             items.append(make_item(
-                title, url, today,
+                title, url, date_str,
                 "HHS OIG — Enforcement", "https://oig.hhs.gov/fraud/enforcement/",
                 f"OIG enforcement action: {title}", "Enforcement Action", "", "regulatory"
             ))
             if len(items) >= MAX_ITEMS:
                 break
-        print(f"    ✓ {len(items)} enforcement actions")
+        dated = sum(1 for _, _, d in entries if d)
+        unknown = len(entries) - dated
+        print(f"    ✓ {len(items)} enforcement actions ({dated} dated, {unknown} date-unknown)")
         return items
     except Exception as e:
         print(f"    ✗ {e}")
@@ -520,22 +623,24 @@ def fetch_oig_reports():
             if not title or len(title) < 10 or not href:
                 continue
             url = href if href.startswith("http") else "https://oig.hhs.gov" + href
-            entries.append((title, url))
+            date_str = _find_date_near_element(a)
+            entries.append((title, url, date_str))
 
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         seen, items = set(), []
-        for title, url in entries:
+        for title, url, date_str in entries:
             if url in seen:
                 continue
             seen.add(url)
             items.append(make_item(
-                title, url, today,
+                title, url, date_str,
                 "HHS OIG — Reports", "https://oig.hhs.gov",
                 f"OIG: {title}", "OIG Report", "", "regulatory"
             ))
             if len(items) >= MAX_ITEMS:
                 break
-        print(f"    ✓ {len(items)} OIG reports")
+        dated = sum(1 for _, _, d in entries if d)
+        unknown = len(entries) - dated
+        print(f"    ✓ {len(items)} OIG reports ({dated} dated, {unknown} date-unknown)")
         return items
     except Exception as e:
         print(f"    ✗ {e}")
@@ -563,13 +668,13 @@ def fetch_cms_newsroom():
                     if val:
                         try: pub=datetime(*val[:6],tzinfo=timezone.utc); break
                         except: pass
-                pub = pub or datetime.now(timezone.utc)
-                if pub < cutoff_dt: continue
+                if pub is not None and pub < cutoff_dt: continue
+                pub_date_str = pub.strftime("%Y-%m-%d") if pub is not None else ""
                 title = getattr(entry,"title","").strip()
                 link  = getattr(entry,"link","").strip()
                 if not title or not link: continue
                 items.append(make_item(
-                    title, link, pub.strftime("%Y-%m-%d"),
+                    title, link, pub_date_str,
                     "CMS Newsroom", "https://www.cms.gov",
                     strip_html(getattr(entry,"summary","")),
                     "CMS News","","regulatory"
@@ -593,14 +698,15 @@ def fetch_cms_newsroom():
                 url = href if href.startswith("http") else "https://www.cms.gov" + href
                 entries.append((title, url))
 
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             seen, items = set(), []
             for title, url in entries:
                 if url in seen:
                     continue
                 seen.add(url)
+                # CMS press-release URLs embed /YYYY/MM/ — extract the real date.
+                date_str = _date_from_url(url)
                 items.append(make_item(
-                    title, url, today,
+                    title, url, date_str,
                     "CMS Newsroom", "https://www.cms.gov",
                     f"CMS press release: {title}",
                     "Press Release", "", "regulatory"
@@ -755,6 +861,9 @@ def main():
     print(f"  Lookback: {DAYS_BACK} days")
     print("=" * 60)
 
+    # Capture scrape timestamp before fetching so every item gets the same value.
+    scraped_at = datetime.now(timezone.utc).isoformat()
+
     all_items = fetch_all()
 
     # Deduplicate by normalized URL
@@ -766,23 +875,45 @@ def main():
             a["url"] = url
             deduped.append(a)
 
+    # Inject discovery_date: when this pipeline run first saw each item.
+    for a in deduped:
+        a["discovery_date"] = scraped_at
+
     source_counts = {}
+    date_unknown_by_source = {}
     for a in deduped:
         s = a["source_name"].split("—")[0].strip()
         source_counts[s] = source_counts.get(s, 0) + 1
+        if a.get("date_unknown"):
+            date_unknown_by_source[s] = date_unknown_by_source.get(s, 0) + 1
+
+    # Warn if an entire source returns zero parseable dates — signals a page-layout change.
+    zero_date_sources = [
+        s for s, n in source_counts.items()
+        if date_unknown_by_source.get(s, 0) == n and n > 0
+    ]
 
     print(f"\n{'='*60}")
     print(f"  Total fetched: {len(all_items)}")
     print(f"  After dedup:   {len(deduped)}")
     print(f"  Regulatory:    {len([a for a in deduped if a['source_type'] in ('regulatory','both')])}")
     print(f"  Policy:        {len([a for a in deduped if a['source_type'] in ('policy','both')])}")
+    total_unknown = sum(1 for a in deduped if a.get("date_unknown"))
+    print(f"  Date-unknown:  {total_unknown} ({100*total_unknown//max(len(deduped),1)}%)")
     print("\n  By source:")
     for src, n in sorted(source_counts.items(), key=lambda x: -x[1]):
         if n > 0:
-            print(f"    {src:<42} {n}")
+            unk = date_unknown_by_source.get(src, 0)
+            flag = " ⚠ ALL dates unknown" if src in zero_date_sources else (f" ({unk} date-unknown)" if unk else "")
+            print(f"    {src:<42} {n}{flag}")
+
+    if zero_date_sources:
+        print(f"\n  ⚠ WARNING: {len(zero_date_sources)} source(s) returned zero parseable dates:")
+        for s in zero_date_sources:
+            print(f"    • {s} — page layout may have changed, check selector")
 
     output = {
-        "scraped_at": datetime.now(timezone.utc).isoformat(),
+        "scraped_at": scraped_at,
         "days_back":  DAYS_BACK,
         "total":      len(deduped),
         "articles":   deduped,
@@ -871,25 +1002,40 @@ def test_sources():
             print(f"  {label:<24} ✗ {str(e)[:24]}")
             fail += 1
 
-    # Scraper-based (HTML) checks
-    print("\n  Scraped pages:")
-    for label, url in [
-        ("OIG Enforcement", "https://oig.hhs.gov/fraud/enforcement/"),
-        ("OIG What's New",  "https://oig.hhs.gov/newsroom/whats-new/"),
-        ("CMS Press",       "https://www.cms.gov/newsroom/press-releases"),
-    ]:
+    # Scraper-based (HTML) checks — also verify date extraction works
+    print("\n  Scraped pages (connectivity + date extraction):")
+    scrape_checks = [
+        ("OIG Enforcement", "https://oig.hhs.gov/fraud/enforcement/",   'a[href*="/fraud/enforcement/"]'),
+        ("OIG What's New",  "https://oig.hhs.gov/newsroom/whats-new/",  'a[href*="/reports/"], a[href*="/newsroom/"]'),
+        ("CMS Press",       "https://www.cms.gov/newsroom/press-releases", 'a[href*="/newsroom/press-releases/"]'),
+    ]
+    for label, url, selector in scrape_checks:
         try:
             r = get_url(url, timeout=12)
-            mark = "✓ OK" if r.status_code == 200 else f"HTTP {r.status_code}"
+            if r.status_code != 200:
+                print(f"  {label:<24} HTTP {r.status_code:<9} —")
+                fail += 1
+                continue
+            soup = BeautifulSoup(r.text, "html.parser")
+            links = [a for a in soup.select(selector) if len(a.get_text(strip=True)) >= 10]
+            sample = links[:10]
+            dated = sum(1 for a in sample if _find_date_near_element(a))
+            if dated == 0 and sample:
+                mark = f"✓ OK ({len(links)} links)  ⚠ 0/{len(sample)} dates parseable — selector may need update"
+                warn += 1
+            elif sample:
+                mark = f"✓ OK ({len(links)} links, {dated}/{len(sample)} dated in sample)"
+                ok += 1
+            else:
+                mark = f"⚠ OK but 0 links matched selector"
+                warn += 1
             print(f"  {label:<24} {mark}")
-            if r.status_code == 200: ok += 1
-            else: fail += 1
         except Exception as e:
-            print(f"  {label:<24} ✗ {str(e)[:24]}")
+            print(f"  {label:<24} ✗ {str(e)[:40]}")
             fail += 1
 
     print("\n  " + "-" * 50)
-    print(f"  {ok} working   {warn} empty   {fail} failing")
+    print(f"  {ok} working   {warn} empty/warn   {fail} failing")
     print("=" * 64)
 
 

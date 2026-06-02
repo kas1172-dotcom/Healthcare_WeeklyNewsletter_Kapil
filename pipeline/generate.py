@@ -34,9 +34,22 @@ import requests
 from anthropic import Anthropic
 
 # ── CONFIG ───────────────────────────────────────────────────────────────────
-CLASSIFY_MODEL  = os.environ.get("ANTHROPIC_CLASSIFY_MODEL", "claude-haiku-4-5-20251001")
-EDITORIAL_MODEL = os.environ.get("ANTHROPIC_MODEL",          "claude-sonnet-4-6")
+CLASSIFY_MODEL   = os.environ.get("ANTHROPIC_CLASSIFY_MODEL", "claude-haiku-4-5-20251001")
+EDITORIAL_MODEL  = os.environ.get("ANTHROPIC_MODEL",          "claude-sonnet-4-6")
 GITHUB_FILE_PATH = "newsletter_data.json"
+ARCHIVE_FILE     = "newsletter_archive.json"
+
+# Retain at most this many weekly runs in the archive run-list.
+# Older run records are pruned; their articles remain in the article dict for de-dup.
+# 26 runs ≈ 6 months. Override with env var ARCHIVE_MAX_RUNS.
+ARCHIVE_MAX_RUNS = int(os.environ.get("ARCHIVE_MAX_RUNS", "26"))
+
+# Max articles classified per edition. Set well above typical weekly volume (~170 total)
+# so it effectively never truncates — the frontend triages via tiers/drawers, so we
+# classify everything rather than silently dropping items before they can be archived.
+MAX_ARTICLES_PER_EDITION = int(os.environ.get("MAX_ARTICLES_PER_EDITION", "150"))
+# How many regulatory items may spill into the policy pool to round it out.
+POLICY_SPILLOVER_FROM_REG = 30
 
 # ── CATEGORIES ────────────────────────────────────────────────────────────────
 CONSULTING_CATEGORIES = [
@@ -106,16 +119,16 @@ NOISE_SIGNALS = [
     "specially adapted housing", "firearms", "nuclear reactor",
 ]
 
-def is_health_relevant(a):
-    if (a.get("category") or "").upper() == "DISCARD":
-        return False
+def _is_noise(a):
+    """Hard-drop only items whose content contains definitively non-healthcare noise signals.
+    DISCARD-tier items are kept — the frontend collapses them into a hidden drawer."""
     text = " ".join([
         a.get("headline") or "",
         a.get("title") or "",
         a.get("summary") or "",
         a.get("snippet") or "",
     ]).lower()
-    return not any(sig in text for sig in NOISE_SIGNALS)
+    return any(sig in text for sig in NOISE_SIGNALS)
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 def parse_json_response(raw_text):
@@ -144,21 +157,36 @@ def validate_article_output(article, idx=None):
         errors.append("article is not an object")
         return errors
 
-    required = ["category", "urgency", "headline", "summary", "implication", "is_comment_period"]
-    for field in required:
+    string_required = ["category", "urgency", "headline", "summary", "so_what", "now_what", "implication"]
+    for field in string_required:
         if field not in article:
             errors.append(f"missing {field}")
-            continue
-        if field == "is_comment_period":
-            if not isinstance(article[field], bool):
-                errors.append("is_comment_period must be boolean")
+        elif not isinstance(article[field], str) or not article[field].strip():
+            errors.append(f"{field} must be a non-empty string")
+
+    numeric_required = ["importance_score", "consulting_relevance", "policy_relevance"]
+    for field in numeric_required:
+        if field not in article:
+            errors.append(f"missing {field}")
         else:
-            if not isinstance(article[field], str) or not article[field].strip():
-                errors.append(f"{field} must be a non-empty string")
+            val = article[field]
+            if not isinstance(val, (int, float)) or not (0 <= val <= 100):
+                errors.append(f"{field} must be a number 0–100, got {val!r}")
+
+    if "is_comment_period" not in article:
+        errors.append("missing is_comment_period")
+    elif not isinstance(article["is_comment_period"], bool):
+        errors.append("is_comment_period must be boolean")
 
     urgency = article.get("urgency")
-    if urgency not in ("routine", "important", "urgent"):
-        errors.append(f"invalid urgency: {urgency}")
+    if urgency not in ("routine", "important", "urgent", "discard"):
+        errors.append(f"invalid urgency: {urgency!r}")
+
+    # stakeholder_balance must be dict or null — not validated deeply
+    sb = article.get("stakeholder_balance")
+    if sb is not None and not isinstance(sb, dict):
+        errors.append("stakeholder_balance must be a dict or null")
+
     return errors
 
 
@@ -175,6 +203,7 @@ def validate_newsletter_data(data):
         for field in ("subject_line", "theme_of_week", "editors_note", "categories", "articles"):
             if field not in sub:
                 raise ValueError(f"{edition} missing {field}")
+        # whats_new is optional (absent on first run)
         if not isinstance(sub["categories"], list):
             raise ValueError(f"{edition}.categories must be a list")
         if not isinstance(sub["articles"], list):
@@ -183,6 +212,133 @@ def validate_newsletter_data(data):
             errors = validate_article_output(article, idx)
             if errors:
                 raise ValueError(f"{edition} article {idx} errors: {errors}")
+
+
+# ── ARCHIVE ───────────────────────────────────────────────────────────────────
+
+def load_archive(path=ARCHIVE_FILE):
+    """Load the on-disk archive, or return a fresh empty structure on first run."""
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            # Migrate: older archives may lack the 'runs' key
+            data.setdefault("runs", [])
+            data.setdefault("articles", {})
+            return data
+        except Exception as e:
+            print(f"  ⚠ Could not load archive ({e}) — starting fresh")
+    return {"last_updated": None, "runs": [], "articles": {}}
+
+
+def update_archive(archive, output, run_date):
+    """
+    Upsert new articles into the archive and record this run's URL sets.
+    Articles are stored by normalized URL (the dedup key).
+    Runs older than ARCHIVE_MAX_RUNS are rolled off, and any article not referenced
+    by a retained run is garbage-collected so the archive file stays bounded.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+
+    for edition in ("consulting", "policy"):
+        for a in output.get(edition, {}).get("articles", []):
+            url = a.get("url", "")
+            if not url:
+                continue
+            if url not in archive["articles"]:
+                archive["articles"][url] = {**a, "first_seen": now, "last_seen": now}
+            else:
+                archive["articles"][url]["last_seen"] = now
+
+    run_record = {
+        "run_date":       run_date,
+        "generated_at":   now,
+        "consulting_urls": [a["url"] for a in output.get("consulting", {}).get("articles", []) if a.get("url")],
+        "policy_urls":     [a["url"] for a in output.get("policy",     {}).get("articles", []) if a.get("url")],
+    }
+    archive["runs"].append(run_record)
+
+    # Retention: keep only the last ARCHIVE_MAX_RUNS runs, then garbage-collect any
+    # article no longer referenced by a retained run. This bounds the file size in
+    # Git history. An item that reappears after rolling off is legitimately "new" again.
+    if len(archive["runs"]) > ARCHIVE_MAX_RUNS:
+        archive["runs"] = archive["runs"][-ARCHIVE_MAX_RUNS:]
+
+    live_urls = set()
+    for r in archive["runs"]:
+        live_urls.update(r.get("consulting_urls", []))
+        live_urls.update(r.get("policy_urls", []))
+    before = len(archive["articles"])
+    archive["articles"] = {u: a for u, a in archive["articles"].items() if u in live_urls}
+    pruned = before - len(archive["articles"])
+    if pruned:
+        print(f"  ↺ Archive retention: pruned {pruned} article(s) older than {ARCHIVE_MAX_RUNS} runs")
+
+    archive["last_updated"] = now
+    return archive
+
+
+def save_archive(archive, path=ARCHIVE_FILE):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(archive, f, indent=2, default=str)
+    n_articles = len(archive["articles"])
+    n_runs     = len(archive["runs"])
+    print(f"  ✓ Archive: {n_articles} unique articles across {n_runs} runs → {path}")
+
+
+# ── WHAT'S NEW ────────────────────────────────────────────────────────────────
+
+def compute_whats_new(current_articles, archive, edition):
+    """
+    Diff this run's URLs against the immediately previous run for this edition.
+    Returns a digest dict or None if there is no prior run to compare against.
+
+    'New' means the URL appeared in this run but NOT in the previous run's URL set.
+    We use the immediately prior run (not the full archive) so the window is always
+    'since last Monday' — honest and predictable.
+    """
+    url_key = f"{edition}_urls"
+    runs = archive.get("runs", [])
+
+    # Find the most recent run that has a URL set for this edition.
+    # The last entry in runs[] is the one we just appended, so the prior run is [-2].
+    prior_runs = [r for r in runs if url_key in r]
+    if len(prior_runs) < 2:
+        # First run or only one run recorded — nothing to diff against.
+        return None
+
+    previous_run = prior_runs[-2]
+    previous_urls = set(previous_run.get(url_key, []))
+    previous_date = previous_run.get("run_date", "previous run")
+
+    new_articles = [a for a in current_articles if a.get("url") and a["url"] not in previous_urls]
+
+    if not new_articles:
+        return {
+            "count": 0, "urgent_count": 0, "important_count": 0,
+            "previous_run_date": previous_date,
+            "articles": [],
+            "message": f"No new items since {previous_date}.",
+        }
+
+    # Sort by importance_score desc, then urgency
+    urgency_order = {"urgent": 0, "important": 1, "routine": 2, "discard": 3}
+    new_articles.sort(key=lambda a: (
+        urgency_order.get(a.get("urgency", "routine"), 2),
+        -(a.get("importance_score") or 0),
+    ))
+
+    urgent_count    = sum(1 for a in new_articles if a.get("urgency") == "urgent")
+    important_count = sum(1 for a in new_articles if a.get("urgency") == "important")
+
+    return {
+        "count":           len(new_articles),
+        "urgent_count":    urgent_count,
+        "important_count": important_count,
+        "previous_run_date": previous_date,
+        "articles":        new_articles[:20],   # cap at 20 for the digest panel
+        "message":         None,
+    }
 
 
 def require_env(name):
@@ -202,7 +358,7 @@ def parse_args():
     return parser.parse_args()
 
 # ── CLASSIFICATION ────────────────────────────────────────────────────────────
-def classify_articles(client, articles, categories, audience_label, audience_desc):
+def classify_articles(client, articles, categories, audience_label, audience_desc, edition="consulting"):
     BATCH = 15
     total = len(articles)
     print(f"\n  Classifying {total} articles for {audience_label} audience...")
@@ -210,8 +366,39 @@ def classify_articles(client, articles, categories, audience_label, audience_des
     batches   = [articles[i:i+BATCH] for i in range(0, total, BATCH)]
     n_batches = len(batches)
 
-    # Static system prompt — cached across all batches for this edition run
-    system_text = f"""You are a senior healthcare analyst writing for {audience_desc}.
+    # Policy edition gets stakeholder_balance; consulting gets null.
+    if edition == "policy":
+        stakeholder_schema = (
+            '  "stakeholder_balance": {{\n'
+            '    "who_benefits": "<who gains from this development>",\n'
+            '    "who_bears_cost": "<who bears the burden or loses>",\n'
+            '    "case_for": "<strongest argument in favor, fairly stated>",\n'
+            '    "case_against": "<strongest argument against, fairly stated>"\n'
+            '  }} or null if the item has no genuine political/stakeholder dimension,'
+        )
+        stakeholder_guidance = """
+━━━ BIPARTISAN ANALYSIS (policy edition) ━━━
+For items with a genuine policy/political dimension, populate stakeholder_balance.
+Rules:
+  • Present BOTH sides' strongest argument — not a strawman, not your view.
+  • who_benefits and who_bears_cost name specific constituencies (providers, patients,
+    insurers, taxpayers, rural hospitals, etc.) — not vague terms like "the public."
+  • case_for / case_against: 1–2 sentences each, written so a knowledgeable advocate
+    for that side would recognize it as their actual argument.
+  • Do NOT signal which side is correct. Your job is calibration, not persuasion.
+  • Set null for factual/administrative items (routine clearances, court scheduling
+    notices, advisory committee meetings) that have no meaningful stakeholder split."""
+    else:
+        stakeholder_schema = '  "stakeholder_balance": null,'
+        stakeholder_guidance = ""
+
+    # Static system prompt — cached across all batches for this edition run.
+    system_text = f"""You are a senior healthcare analyst producing structured intelligence for {audience_desc}.
+
+Your output must help readers answer three questions fast:
+  1. What happened and what changed from prior state?
+  2. Why does it matter — non-obviously, with second-order effects?
+  3. What should I do or watch for right now?
 
 Classify each article using ONLY these exact category strings:
 {chr(10).join(f'- {c}' for c in categories)}
@@ -222,14 +409,101 @@ Return ONLY a valid JSON array — no markdown, no preamble:
 [{{
   "idx": <0-based index within this batch>,
   "category": "<exact category string or DISCARD>",
-  "urgency": "routine"|"important"|"urgent",
-  "headline": "<rewritten headline, analyst-voice, 10-15 words, specific and informative>",
-  "summary": "<2-3 sentences: what happened, regulatory/policy context, why it matters>",
-  "implication": "<1 sentence: specific takeaway or action item for {audience_label}s>",
-  "is_comment_period": <true if proposed rule open for public comment, else false>
+  "urgency": "urgent" | "important" | "routine" | "discard",
+  "importance_score": <integer 0–100, see rubric>,
+  "consulting_relevance": <integer 0–100, relevance to compliance officers and strategy consultants>,
+  "policy_relevance": <integer 0–100, relevance to policy professionals and legislative staff>,
+  "headline": "<rewritten headline, analyst voice, 10–15 words, specific — name the agency/rule/dollar amount>",
+  "summary": "<2–3 sentences: what happened, what rule/law/action is involved, what changed from prior state>",
+  "so_what": "<1–2 sentences: non-obvious analysis — connect to a broader trend or agency priority pattern, name second-order consequences for providers/payers/patients/legislation>",
+  "now_what": "<1 sentence: concrete action or monitoring item — what should {audience_label}s DO or WATCH FOR in the next 30–90 days>",
+  "implication": "<same content as now_what — field kept for compatibility>",
+{stakeholder_schema}
+  "confidence_note": "<calibrated hedge if uncertain — e.g. 'Enforcement trajectory unclear pending court ruling' or 'Comment period outcome uncertain given split committee' — use null when the analysis is high-confidence>",
+  "is_comment_period": <true if a proposed rule is currently open for public comment, else false>
 }}]
 
-Urgency: urgent=final rules effective immediately/major enforcement, important=proposed rules/significant guidance, routine=standard notices"""
+━━━ IMPORTANCE SCORE RUBRIC (0–100) ━━━
+
+Score the INTERSECTION of magnitude × breadth-of-impact, not just headline size.
+
+  90–100  Landmark only:
+          • Final rule reshaping national payment rates or coverage (IPPS, OPPS, PFS, MA rates)
+          • Enforcement action >$50M or industry-wide consent decree
+          • Legislation signed into law affecting Medicare/Medicaid/ACA
+          • Supreme Court health ruling
+
+  70–89   Significant — most {audience_label}s should act or closely monitor:
+          • Proposed rule with major payment/coverage implications (comment period open)
+          • Enforcement action $1M–$50M or notable FCA settlement with CIA
+          • FDA approval of first-in-class drug or Class I recall of widely-used product
+          • CBO score on major health legislation
+          • Comment deadline within 14 days
+
+  50–69   Notable — {audience_label}s should read in full:
+          • Final guidance, interim rule, or significant policy clarification
+          • OIG advisory opinion, fraud alert, or report with broad implications
+          • FDA 510(k) clearance of a significant device category (not commodity)
+          • Congressional hearing or committee markup on a health bill
+          • Comment deadline 15–60 days out
+
+  30–49   Routine but relevant:
+          • Minor rule updates, technical corrections, PRA notices
+          • Routine FDA clearances of commodity devices/drugs
+          • Research or think tank report (reference value, no immediate action)
+          • Standard advisory committee meeting notices
+          • Comment deadline >60 days or no deadline
+
+  0–29    Low signal or discard territory:
+          • Non-health content that slipped keyword filters
+          • Highly procedural notices with zero practical healthcare impact
+          • Purely local scope with no national precedent
+
+━━━ WORKED EXAMPLES ━━━
+
+Example A — importance_score: 88, urgency: "urgent"
+  Title: "CMS releases final 2025 IPPS rule; hospitals receive 2.9% base rate update"
+  Reasoning: Final rule, direct dollar impact on every inpatient hospital in Medicare,
+  effective Oct 1. Consulting_relevance: 92 (affects all hospital clients' planning),
+  policy_relevance: 78 (payment policy with legislative implications).
+  so_what: "The 2.9% update trails estimated market basket inflation by ~0.4pp after
+  productivity adjustment — continuing a multi-year pattern of real-terms cuts to
+  hospital operating margins that is accelerating consolidation among independent hospitals."
+  confidence_note: null
+
+Example B — importance_score: 62, urgency: "important"
+  Title: "OIG issues advisory opinion on specialty pharmacy co-pay copayment assistance arrangements"
+  Reasoning: Compliance guidance with enforcement implications for specialty pharmacy
+  clients, but narrow applicability (specific arrangement structure). Consulting_relevance: 78,
+  policy_relevance: 38.
+  so_what: "This is the OIG's third advisory opinion in 18 months scrutinizing copay
+  assistance structures — signaling that the office views this area as a priority
+  enforcement target regardless of the specific vehicle used."
+  confidence_note: "Advisory opinions bind only the requesting party; enforcement risk
+  for similar but not identical arrangements remains uncertain."
+
+Example C — importance_score: 18, urgency: "routine"
+  Title: "FDA clears 510(k) for standard blood pressure monitor — Model BPX-200"
+  Reasoning: Routine clearance of a commodity device. No new technology, no coverage
+  implication, no enforcement angle. Consulting_relevance: 12, policy_relevance: 8.
+  so_what: "Standard iterative device clearance; no policy or reimbursement implications."
+  confidence_note: null
+
+━━━ QUALITY STANDARDS ━━━
+
+so_what must be SPECIFIC and NON-OBVIOUS. Reject:
+  ✗ "This is an important development for providers to monitor."
+  ✗ "Healthcare organizations should be aware of this change."
+Accept:
+  ✓ "This extends a pattern of OIG scrutiny of orthopedics co-management arrangements
+     — the third action in 18 months — suggesting the office is building toward a
+     broader fraud alert or Special Fraud Alert in this space."
+  ✓ "The effective date falls mid-fiscal-year for most health systems, creating a
+     retroactive revenue impact that will show in Q3 earnings reports."
+
+confidence_note: use it liberally. 'Prospects unclear given committee dynamics' and
+'Insufficient information to assess enforcement trajectory' are professional, honest answers.
+Reserve null for items where the facts clearly determine the analysis.{stakeholder_guidance}"""
 
     results_map = {}
 
@@ -245,7 +519,7 @@ Urgency: urgent=final rules effective immediately/major enforcement, important=p
             try:
                 resp = client.messages.create(
                     model=CLASSIFY_MODEL,
-                    max_tokens=3500,
+                    max_tokens=6000,   # new fields (so_what, now_what, stakeholder_balance) add ~150 tok/article
                     system=[{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
                     messages=[{"role": "user", "content": batch_text}],
                 )
@@ -254,7 +528,11 @@ Urgency: urgent=final rules effective immediately/major enforcement, important=p
                 for item in parsed:
                     idx = item.get("idx", 0)
                     if 0 <= idx < len(batch):
-                        classified.append({**batch[idx], **item})
+                        merged = {**batch[idx], **item}
+                        # Ensure implication mirrors now_what for frontend compat
+                        if merged.get("now_what") and not merged.get("implication"):
+                            merged["implication"] = merged["now_what"]
+                        classified.append(merged)
                 print(f"    ✓ Batch {batch_idx+1}/{n_batches} — {len(classified)} classified")
                 return batch_idx, classified
             except Exception as e:
@@ -266,8 +544,11 @@ Urgency: urgent=final rules effective immediately/major enforcement, important=p
                     return batch_idx, [{
                         **a,
                         "category": categories[-1], "urgency": "routine",
+                        "importance_score": 30, "consulting_relevance": 50, "policy_relevance": 50,
                         "headline": a["title"], "summary": a["snippet"],
-                        "implication": "", "is_comment_period": bool(a.get("comment_deadline")),
+                        "so_what": "", "now_what": "", "implication": "",
+                        "stakeholder_balance": None, "confidence_note": None,
+                        "is_comment_period": bool(a.get("comment_deadline")),
                     } for a in batch]
         return batch_idx, []
 
@@ -447,11 +728,11 @@ def main():
     EDITORIAL_MODEL = args.model
     client = Anthropic(api_key=anthropic_api_key)
 
-    reg_pool = [a for a in articles if a.get("source_type") in ("regulatory", "both")][:60]
+    reg_pool = [a for a in articles if a.get("source_type") in ("regulatory", "both")][:MAX_ARTICLES_PER_EDITION]
     pol_pool = [a for a in articles if a.get("source_type") in ("policy", "both")]
     pol_urls = {a.get("url") for a in pol_pool}
-    pol_pool += [a for a in reg_pool if a.get("url") not in pol_urls][:20]
-    pol_pool = pol_pool[:60]
+    pol_pool += [a for a in reg_pool if a.get("url") not in pol_urls][:POLICY_SPILLOVER_FROM_REG]
+    pol_pool = pol_pool[:MAX_ARTICLES_PER_EDITION]
 
     print(f"\n  Consulting pool: {len(reg_pool)} articles")
     print(f"  Policy pool:     {len(pol_pool)} articles")
@@ -460,17 +741,23 @@ def main():
     consulting_raw = classify_articles(
         client, reg_pool, CONSULTING_CATEGORIES,
         "healthcare consultant",
-        "healthcare strategy consultants, compliance officers, and healthcare executives"
+        "healthcare strategy consultants, compliance officers, and healthcare executives",
+        edition="consulting",
     )
     policy_raw = classify_articles(
         client, pol_pool, POLICY_CATEGORIES,
         "healthcare policy professional",
-        "healthcare policy professionals, legislative staff, lobbyists, and government affairs leads"
+        "healthcare policy professionals, legislative staff, lobbyists, and government affairs leads",
+        edition="policy",
     )
 
-    urgency_key = lambda a: {"urgent": 0, "important": 1, "routine": 2}.get(a.get("urgency", "routine"), 2)
-    consulting_articles = sorted([a for a in consulting_raw if is_health_relevant(a)], key=urgency_key)
-    policy_articles = sorted([a for a in policy_raw if is_health_relevant(a)], key=urgency_key)
+    # Keep ALL articles — urgency/importance_score handle triage in the frontend.
+    # Only hard-drop items whose content is definitively non-healthcare (noise signals).
+    urgency_key = lambda a: {"urgent": 0, "important": 1, "routine": 2, "discard": 3}.get(
+        a.get("urgency", "routine"), 2
+    )
+    consulting_articles = sorted([a for a in consulting_raw if not _is_noise(a)], key=urgency_key)
+    policy_articles     = sorted([a for a in policy_raw     if not _is_noise(a)], key=urgency_key)
 
     print(f"\n  After filter: {len(consulting_articles)} consulting, {len(policy_articles)} policy articles")
 
@@ -481,6 +768,11 @@ def main():
     print("\n[3/4] Generating editorial...")
     consulting_ed = generate_editorial(client, consulting_articles, "consulting", week_of)
     policy_ed = generate_editorial(client, policy_articles, "policy", week_of)
+
+    # ── Archive: load before building output ──
+    print("\n[3.5/4] Loading archive...")
+    archive = load_archive(ARCHIVE_FILE)
+    run_date = datetime.now().strftime("%Y-%m-%d")
 
     output = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -499,6 +791,31 @@ def main():
         },
     }
 
+    # Append this run to the archive FIRST. compute_whats_new diffs against the
+    # immediately-previous run (prior_runs[-2], since [-1] is now this run), so the
+    # archive must already contain this run when we compute the digest.
+    archive = update_archive(archive, output, run_date)
+
+    consulting_new = compute_whats_new(consulting_articles, archive, "consulting")
+    policy_new     = compute_whats_new(policy_articles,     archive, "policy")
+
+    output["consulting"]["whats_new"] = consulting_new
+    output["policy"]["whats_new"]     = policy_new
+
+    if consulting_new:
+        print(f"  ✓ Consulting what's new: {consulting_new['count']} new items "
+              f"({consulting_new['urgent_count']} urgent) since {consulting_new['previous_run_date']}")
+    else:
+        print("  ✓ Consulting what's new: first run — no prior run to compare")
+
+    if policy_new:
+        print(f"  ✓ Policy what's new: {policy_new['count']} new items "
+              f"({policy_new['urgent_count']} urgent) since {policy_new['previous_run_date']}")
+    else:
+        print("  ✓ Policy what's new: first run — no prior run to compare")
+
+    save_archive(archive, ARCHIVE_FILE)
+
     try:
         validate_newsletter_data(output)
     except ValueError as exc:
@@ -508,6 +825,16 @@ def main():
     print("\n[4/4] Publishing...")
     save_json(output, args.output)
     push_to_github(output, github_token, github_repo, args.output, args.no_push)
+    # Also push archive (it's small enough; keeps GitHub Pages host in sync)
+    push_to_github(archive, github_token, github_repo, ARCHIVE_FILE, args.no_push)
+
+    def _tier_summary(articles):
+        tiers = {"urgent": 0, "important": 0, "routine": 0, "discard": 0}
+        for a in articles:
+            tiers[a.get("urgency", "routine")] = tiers.get(a.get("urgency", "routine"), 0) + 1
+        scored = [a.get("importance_score", 0) for a in articles if isinstance(a.get("importance_score"), (int, float))]
+        avg = round(sum(scored) / len(scored)) if scored else "n/a"
+        return tiers, avg
 
     cat_counts_c = {}
     for a in consulting_articles:
@@ -516,11 +843,18 @@ def main():
     for a in policy_articles:
         cat_counts_p[a.get("category", "?")] = cat_counts_p.get(a.get("category", "?"), 0) + 1
 
+    c_tiers, c_avg = _tier_summary(consulting_articles)
+    p_tiers, p_avg = _tier_summary(policy_articles)
+
     print("\n" + "=" * 60)
-    print(f"  ✓ Consulting: {len(consulting_articles)} articles")
+    print(f"  ✓ Consulting: {len(consulting_articles)} articles  "
+          f"(urgent {c_tiers['urgent']} · important {c_tiers['important']} · "
+          f"routine {c_tiers['routine']} · discard {c_tiers['discard']})  avg score {c_avg}")
     for cat, n in sorted(cat_counts_c.items(), key=lambda x: -x[1]):
         print(f"    {n:>3}  {cat}")
-    print(f"\n  ✓ Policy: {len(policy_articles)} articles")
+    print(f"\n  ✓ Policy: {len(policy_articles)} articles  "
+          f"(urgent {p_tiers['urgent']} · important {p_tiers['important']} · "
+          f"routine {p_tiers['routine']} · discard {p_tiers['discard']})  avg score {p_avg}")
     for cat, n in sorted(cat_counts_p.items(), key=lambda x: -x[1]):
         print(f"    {n:>3}  {cat}")
     print(f"\n  ✓ Week of: {week_of}")

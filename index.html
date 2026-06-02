@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Healthcare Regulatory &amp; Policy Monitor is a weekly healthcare policy briefing tracking regulatory trends across government, legal, and industry sources.">
+<meta name="description" content="Healthcare Regulatory & Policy Monitor — weekly intelligence briefing tracking 30+ government and industry sources.">
 <title>Healthcare Regulatory &amp; Policy Monitor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -12,156 +12,238 @@
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;line-height:1.6;min-height:100vh}
 
-/* MASTHEAD */
-.masthead{background:#0C1A2E;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,0.3)}
-.masthead-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:72px;gap:12px;flex-wrap:wrap}
+/* ── MASTHEAD ─────────────────────────────────────────────────────── */
+.masthead{background:#0C1A2E;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.3)}
+.masthead-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
-.brand-line{display:flex;flex-direction:column;gap:4px}
-.brand-mark{width:32px;height:32px;background:#0D9488;border-radius:6px;display:flex;align-items:center;justify-content:center}
-.brand-mark svg{width:18px;height:18px}
-.brand-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.01em}
+.brand-mark{width:30px;height:30px;background:#0D9488;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:16px;height:16px}
+.brand-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:-.01em}
 .brand-name span{color:#0D9488;font-weight:400}
-.masthead-note{font-size:12px;color:rgba(255,255,255,0.72);line-height:1.4;max-width:320px}
-.edition-switcher{display:flex;gap:2px;background:rgba(255,255,255,0.07);border-radius:8px;padding:3px}
-.edition-btn{height:34px;padding:0 14px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,0.5);transition:all 0.15s;white-space:nowrap}
+.masthead-note{font-size:11px;color:rgba(255,255,255,.55);line-height:1.3;max-width:280px}
+.edition-switcher{display:flex;gap:2px;background:rgba(255,255,255,.07);border-radius:8px;padding:3px}
+.edition-btn{height:32px;padding:0 14px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:rgba(255,255,255,.45);transition:all .15s;white-space:nowrap}
 .edition-btn.active{background:#0D9488;color:#fff}
-.edition-btn:hover:not(.active){color:rgba(255,255,255,0.85)}
+.edition-btn:hover:not(.active){color:rgba(255,255,255,.8)}
 
-/* FILTER BAR */
-.filter-bar{background:#fff;border-bottom:1px solid #E8E6DF;position:sticky;top:72px;z-index:90}
-.filter-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column}
-.filter-row-top{display:flex;align-items:center;gap:12px;height:46px}
-.filter-row-cats{display:flex;align-items:center;gap:8px;padding:0 0 8px}
-.filter-group{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.filter-label{font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#94A3B8;white-space:nowrap}
-.filter-btns{display:flex;gap:2px;background:#F1F5F9;border-radius:6px;padding:2px}
-.filter-btn{height:26px;padding:0 10px;border:none;border-radius:4px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;background:transparent;color:#64748B;transition:all 0.12s;white-space:nowrap}
-.filter-btn.active{background:#fff;color:#0C1A2E;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-.filter-divider{width:1px;height:20px;background:#E2E8F0;flex-shrink:0}
-.results-count{font-size:11px;color:#94A3B8;margin-left:auto;white-space:nowrap;flex-shrink:0}
-/* Category scroller */
-#cat-filter-btns{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;flex:1;padding:2px 0}
-#cat-filter-btns::-webkit-scrollbar{display:none}
-/* Search */
-.search-wrap{position:relative;flex:1;min-width:100px;max-width:220px}
-.search-input{width:100%;height:28px;padding:0 26px 0 28px;border:1px solid #E2E8F0;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;color:#1A1A1A;background:#F8FAFC;outline:none;transition:border-color 0.12s,background 0.12s}
-.search-input:focus{border-color:#0D9488;background:#fff}
-.search-input::placeholder{color:#CBD5E1}
+/* ── CONTROL BAR ──────────────────────────────────────────────────── */
+.control-bar{background:#fff;border-bottom:1px solid #E8E6DF;position:sticky;top:64px;z-index:90}
+.control-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:10px;height:48px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.control-inner::-webkit-scrollbar{display:none}
+.view-group{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.view-btn{height:28px;padding:0 11px;border:none;border-radius:5px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;background:transparent;color:#64748B;transition:all .12s;white-space:nowrap}
+.view-btn.active{background:#0C1A2E;color:#fff}
+.view-btn:hover:not(.active){background:#F1F5F9;color:#1A1A1A}
+.view-sep{width:1px;height:16px;background:#E2E8F0;margin:0 4px;flex-shrink:0}
+.control-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+.search-wrap{position:relative}
+.search-input{height:28px;padding:0 24px 0 28px;border:1px solid #E2E8F0;border-radius:5px;font-family:'Inter',sans-serif;font-size:12px;color:#1A1A1A;background:#F8FAFC;outline:none;width:180px;transition:border-color .12s,width .2s}
+.search-input:focus{border-color:#0D9488;background:#fff;width:220px}
 .search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#94A3B8;pointer-events:none}
-.search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94A3B8;cursor:pointer;font-size:16px;line-height:1;padding:0;display:none}
-.search-clear.visible{display:block}
+.search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94A3B8;cursor:pointer;font-size:14px;line-height:1;padding:0}
+.date-toggle-btn{height:28px;padding:0 11px;border:1px solid #E2E8F0;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;background:#F8FAFC;color:#64748B;transition:all .12s;white-space:nowrap}
+.date-toggle-btn.active{background:#EFF6FF;border-color:#3B82F6;color:#1D4ED8}
+.results-count{font-size:11px;color:#94A3B8;white-space:nowrap}
+.date-filter-row{background:#EFF6FF;border-bottom:1px solid #BFDBFE;padding:8px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.date-filter-row.hidden{display:none}
+.filter-label{font-size:11px;font-weight:600;color:#1D4ED8;letter-spacing:.04em;text-transform:uppercase}
+.date-input{height:26px;padding:0 8px;border:1px solid #BFDBFE;border-radius:4px;font-size:11px;color:#1A1A1A;background:#fff;outline:none}
+.date-input:focus{border-color:#3B82F6}
+.clear-date-btn{height:26px;padding:0 10px;border:1px solid #BFDBFE;border-radius:4px;font-size:11px;cursor:pointer;background:#fff;color:#1D4ED8}
+.date-filter-note{font-size:11px;color:#3B82F6;margin-left:4px}
 
-/* ISSUE HEADER */
-.issue-header{background:#0C1A2E;padding:48px 24px 40px;text-align:center}
-.issue-meta{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#0D9488;margin-bottom:12px}
-.issue-title{font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,40px);font-weight:700;color:#fff;line-height:1.2;max-width:760px;margin:0 auto 12px;letter-spacing:-0.02em}
-.issue-theme{font-size:14px;color:rgba(255,255,255,0.4);font-style:italic;max-width:560px;margin:0 auto 16px}
-.issue-dateline{font-size:11px;color:rgba(255,255,255,0.2);letter-spacing:0.04em}
+/* ── WHAT'S NEW PANEL ─────────────────────────────────────────────── */
+.wn-panel{background:#064E3B;border-bottom:1px solid #065F46;overflow:hidden}
+.wn-panel.hidden{display:none}
+.wn-inner{max-width:1100px;margin:0 auto;padding:0 24px}
+.wn-header{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;user-select:none}
+.wn-dot{width:8px;height:8px;border-radius:50%;background:#4ADE80;flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.wn-title{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#A7F3D0}
+.wn-since{font-size:11px;color:rgba(167,243,208,.65);margin-left:2px}
+.wn-badges{display:flex;gap:5px;margin-left:6px}
+.wn-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px}
+.wn-badge.urgent{background:rgba(220,38,38,.25);color:#FCA5A5}
+.wn-badge.new{background:rgba(13,148,136,.3);color:#A7F3D0}
+.wn-chevron{margin-left:auto;font-size:13px;color:#6EE7B7;transition:transform .2s}
+.wn-chevron.open{transform:rotate(180deg)}
+.wn-body{padding-bottom:12px}
+.wn-body.hidden{display:none}
+.wn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px;padding-top:4px}
+.wn-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.wn-card-stripe{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:14px}
+.wn-card-stripe.urgent{background:#F87171}
+.wn-card-stripe.important{background:#FCD34D}
+.wn-card-stripe.routine{background:#6EE7B7}
+.wn-card-body{flex:1;min-width:0}
+.wn-card-headline{font-size:12px;font-weight:500;color:#ECFDF5;line-height:1.4}
+.wn-card-headline a{color:inherit;text-decoration:none}
+.wn-card-headline a:hover{text-decoration:underline}
+.wn-card-meta{font-size:10px;color:rgba(167,243,208,.5);margin-top:2px}
+.wn-empty{font-size:12px;color:#6EE7B7;padding:8px 0}
 
-/* EDITOR NOTE */
+/* ── ISSUE HEADER ─────────────────────────────────────────────────── */
+.issue-header{background:#0C1A2E;padding:36px 24px 32px;text-align:center}
+.issue-meta{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#0D9488;margin-bottom:10px}
+.issue-title{font-family:'Playfair Display',serif;font-size:clamp(22px,3.5vw,36px);font-weight:700;color:#fff;line-height:1.2;max-width:720px;margin:0 auto 10px;letter-spacing:-.02em}
+.issue-theme{font-size:13px;color:rgba(255,255,255,.4);font-style:italic;margin:0 auto 14px;max-width:520px}
+.issue-dateline{font-size:10px;color:rgba(255,255,255,.18);letter-spacing:.04em}
 .en-wrap{max-width:1100px;margin:0 auto;padding:0 24px}
-.editors-note{background:#fff;border-left:4px solid #0D9488;border-radius:0 8px 8px 0;padding:20px 24px;margin:28px 0 0}
-.en-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0D9488;margin-bottom:6px}
-.en-text{font-size:14px;line-height:1.75;color:#2D2D2D}
+.editors-note{background:#fff;border-left:4px solid #0D9488;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0 0}
+.en-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#0D9488;margin-bottom:5px}
+.en-text{font-size:13px;line-height:1.75;color:#2D2D2D}
 
-/* LAYOUT */
-.page-body{max-width:1100px;margin:0 auto;padding:28px 24px 64px;display:grid;grid-template-columns:1fr 300px;gap:28px;align-items:start}
-@media(max-width:860px){.page-body{grid-template-columns:1fr}.sidebar{display:none}}
+/* ── PAGE LAYOUT ──────────────────────────────────────────────────── */
+.page-body{max-width:1100px;margin:0 auto;padding:24px 24px 64px;display:grid;grid-template-columns:1fr 290px;gap:24px;align-items:start}
+@media(max-width:840px){.page-body{grid-template-columns:1fr}.sidebar{display:none}}
 
-/* PRIORITY BANNER */
-.priority-banner{background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:14px 18px;margin-bottom:24px}
-.pb-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#DC2626;margin-bottom:8px}
-.pb-item{font-size:13px;color:#7F1D1D;line-height:1.5;padding:5px 0;border-bottom:1px solid #FCA5A5;display:flex;align-items:flex-start;gap:8px}
-.pb-item:last-child{border-bottom:none;padding-bottom:0}
-.pb-item a{color:inherit;text-decoration:none;font-weight:500}
-.pb-item a:hover{text-decoration:underline}
+/* ── TIER SECTIONS ────────────────────────────────────────────────── */
+.tier-section{margin-bottom:28px}
+.tier-label{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E5E3DC}
+.tier-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tier-dot.urgent{background:#DC2626}
+.tier-dot.important{background:#D97706}
+.tier-dot.routine{background:#94A3B8}
+.tier-dot.discard{background:#CBD5E1}
+.tier-dot.unknown{background:#F59E0B}
+.tier-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:#1A1A1A}
+.tier-count{font-size:10px;font-weight:600;color:#9C9A94;background:#EDEBE4;padding:1px 7px;border-radius:100px;margin-left:2px}
+.tier-view-desc{font-size:12px;color:#64748B;line-height:1.6;margin-bottom:14px;padding:10px 14px;background:#F8FAFC;border-radius:6px;border-left:3px solid #0D9488}
+.date-unknown-note{font-size:11px;color:#92400E;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-bottom:10px;line-height:1.5}
 
-/* SORT VIEW */
-.view-by-importance .cat-section{display:none}
-.view-by-importance .flat-list{display:block}
-.flat-list{display:none}
-
-/* CATEGORY */
-.cat-section{margin-bottom:32px}
-.cat-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E5E3DC}
-.cat-bar{width:4px;height:18px;border-radius:2px;flex-shrink:0}
-.cat-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#1A1A1A;flex:1}
-.cat-count{font-size:10px;font-weight:600;color:#9C9A94;background:#EDEBE4;padding:1px 8px;border-radius:100px}
-
-/* ARTICLE CARD */
-.article-card{background:#fff;border-radius:8px;border:1px solid #E8E6DF;margin-bottom:8px;overflow:hidden;transition:box-shadow 0.15s,border-color 0.15s}
-.article-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.07);border-color:#C8C6BF}
-.article-card[data-hidden="true"]{display:none}
+/* ── FULL CARD (urgent + expanded) ───────────────────────────────── */
+.article-card{background:#fff;border-radius:8px;border:1px solid #E8E6DF;margin-bottom:8px;overflow:hidden;transition:box-shadow .15s,border-color .15s}
+.article-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.06);border-color:#C8C6BF}
 .card-inner{display:flex}
 .urgency-stripe{width:4px;flex-shrink:0}
 .urgency-stripe.urgent{background:#DC2626}
 .urgency-stripe.important{background:#D97706}
 .urgency-stripe.routine{background:#E8E6DF}
+.urgency-stripe.discard{background:#F1F5F9}
 .card-body{padding:12px 16px;flex:1;min-width:0}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:5px}
-.card-headline{font-size:13px;font-weight:600;color:#1A1A1A;line-height:1.4;flex:1}
-.card-headline a{color:inherit;text-decoration:none}
-.card-headline a:hover{color:#0D9488}
-.urgency-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;white-space:nowrap;flex-shrink:0}
-.urgency-badge.urgent{background:#FEF2F2;color:#DC2626}
-.urgency-badge.important{background:#FFFBEB;color:#D97706}
-.urgency-badge.routine{display:none}
-.card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.card-meta-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
 .source-pill{font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;background:#F0EEE7;color:#5C5A54}
 .source-pill a{color:inherit;text-decoration:none}
 .source-pill a:hover{color:#0D9488}
-.doc-type-pill{font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;background:rgba(13,148,136,0.1);color:#0F766E}
+.doc-type-pill{font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;background:rgba(13,148,136,.1);color:#0F766E}
 .date-tag{font-size:10px;color:#9C9A94}
-.cat-tag{font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;background:#EEF2FF;color:#4338CA}
-.card-summary{font-size:12px;color:#4A4A4A;line-height:1.65;margin-bottom:6px}
-.card-implication{font-size:11px;color:#0F766E;background:rgba(13,148,136,0.07);border-left:3px solid #0D9488;padding:5px 10px;border-radius:0 4px 4px 0;line-height:1.5}
-.card-implication strong{font-weight:600}
-.comment-deadline{font-size:10px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:4px;padding:3px 7px;margin-top:6px;display:inline-flex;align-items:center;gap:4px}
+.date-unknown-tag{font-size:10px;color:#B45309;background:#FEF3C7;padding:1px 5px;border-radius:3px}
+.importance-tag{font-size:10px;color:#4338CA;background:#EEF2FF;padding:1px 6px;border-radius:100px;font-weight:600}
+.urgency-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;white-space:nowrap;margin-left:auto}
+.urgency-badge.urgent{background:#FEF2F2;color:#DC2626}
+.urgency-badge.important{background:#FFFBEB;color:#D97706}
+.urgency-badge.routine,.urgency-badge.discard{display:none}
+.card-headline{font-size:13px;font-weight:600;color:#1A1A1A;line-height:1.4;margin-bottom:6px}
+.card-headline a{color:inherit;text-decoration:none}
+.card-headline a:hover{color:#0D9488}
+.card-summary{font-size:12px;color:#4A4A4A;line-height:1.65;margin-bottom:8px}
+.card-so-what{font-size:12px;color:#1E3A5F;background:#EFF6FF;border-left:3px solid #3B82F6;padding:7px 10px;border-radius:0 4px 4px 0;line-height:1.6;margin-bottom:6px}
+.card-so-what strong{font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#2563EB;display:block;margin-bottom:2px}
+.card-now-what{font-size:11px;color:#0F766E;background:rgba(13,148,136,.06);border-left:3px solid #0D9488;padding:5px 10px;border-radius:0 4px 4px 0;line-height:1.5;margin-bottom:6px}
+.card-now-what strong{font-weight:600}
+.comment-deadline{font-size:10px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:4px;padding:3px 7px;margin-top:4px;display:inline-flex;align-items:center;gap:4px}
+.confidence-note{font-size:11px;color:#64748B;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:4px;padding:5px 9px;margin-top:6px;line-height:1.5;font-style:italic}
+.confidence-note::before{content:"⚖ ";font-style:normal}
 
-/* EMPTY STATE */
-.empty-state{text-align:center;padding:48px 24px;color:#94A3B8}
-.empty-icon{font-size:32px;margin-bottom:8px}
-.empty-msg{font-size:13px;line-height:1.6}
+/* stakeholder balance */
+.sb-toggle{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#7C3AED;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.15);border-radius:4px;padding:3px 8px;cursor:pointer;margin-top:6px;transition:background .12s}
+.sb-toggle:hover{background:rgba(124,58,237,.12)}
+.sb-body{display:none;margin-top:8px;grid-template-columns:1fr 1fr;gap:6px}
+.sb-body.open{display:grid}
+.sb-cell{background:#FAF5FF;border:1px solid #DDD6FE;border-radius:5px;padding:7px 10px}
+.sb-cell-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7C3AED;margin-bottom:3px}
+.sb-cell-text{font-size:11px;color:#1A1A1A;line-height:1.55}
 
-/* SIDEBAR */
-.sidebar{position:sticky;top:172px}
-.sidebar-card{background:#fff;border:1px solid #E8E6DF;border-radius:8px;overflow:hidden;margin-bottom:14px}
-.sidebar-header{padding:10px 14px;background:#0C1A2E}
-.sidebar-title{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6)}
-.sidebar-body{padding:10px 14px}
-.stat-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F0EEE7;font-size:12px}
+/* ── COMPACT CARD ─────────────────────────────────────────────────── */
+.compact-card{background:#fff;border-radius:6px;border:1px solid #E8E6DF;margin-bottom:6px;overflow:hidden;cursor:pointer;transition:box-shadow .12s,border-color .12s}
+.compact-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.05);border-color:#C8C6BF}
+.compact-inner{display:flex;align-items:stretch}
+.compact-body{padding:9px 14px;flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+.compact-headline{font-size:12px;font-weight:600;color:#1A1A1A;line-height:1.35;flex:1;min-width:0}
+.compact-headline a{color:inherit;text-decoration:none;pointer-events:none}
+.compact-teaser{font-size:11px;color:#0F766E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;flex-shrink:0}
+.compact-expand{font-size:12px;color:#94A3B8;flex-shrink:0;transition:transform .2s;padding-left:6px}
+.compact-card.expanded .compact-expand{transform:rotate(180deg)}
+.compact-detail{display:none;padding:0 14px 10px;border-top:1px solid #F1F0EB;margin-top:2px}
+.compact-card.expanded .compact-detail{display:block}
+
+/* ── ROUTINE CARD (lighter weight) ───────────────────────────────── */
+.routine-card{background:#FCFBF9;border-radius:6px;border:1px solid #EDEBD5;margin-bottom:5px;overflow:hidden}
+.routine-inner{display:flex;align-items:stretch}
+.routine-body{padding:7px 12px;flex:1;display:flex;align-items:center;gap:8px}
+.routine-headline{font-size:11.5px;font-weight:500;color:#3D3D3D;flex:1;line-height:1.35}
+.routine-headline a{color:inherit;text-decoration:none}
+.routine-headline a:hover{color:#0D9488}
+.routine-source{font-size:10px;color:#9C9A94;white-space:nowrap;flex-shrink:0}
+
+/* ── DRAWER ───────────────────────────────────────────────────────── */
+.drawer-section{margin-top:4px}
+.drawer-btn{width:100%;padding:8px 14px;border:1px dashed #C8C6BF;border-radius:6px;background:#FAFAF8;font-size:11px;font-weight:500;color:#64748B;cursor:pointer;text-align:left;transition:background .12s}
+.drawer-btn:hover{background:#F0EEE7}
+.drawer-content{display:none;margin-top:4px}
+.drawer-content.open{display:block}
+.minimal-card{padding:6px 10px;border-bottom:1px solid #F0EEE7;display:flex;align-items:center;gap:8px;font-size:11px;color:#5C5A54;line-height:1.4}
+.minimal-card:last-child{border-bottom:none}
+.minimal-card a{color:#1A1A1A;text-decoration:none;font-weight:500}
+.minimal-card a:hover{color:#0D9488;text-decoration:underline}
+.minimal-source{font-size:10px;color:#9C9A94;white-space:nowrap;flex-shrink:0}
+
+/* ── SIDEBAR ──────────────────────────────────────────────────────── */
+.sidebar{position:sticky;top:130px}
+.sidebar-card{background:#fff;border:1px solid #E8E6DF;border-radius:8px;overflow:hidden;margin-bottom:12px}
+.sidebar-header{padding:9px 14px;background:#0C1A2E}
+.sidebar-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.sidebar-body{padding:8px 14px}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #F0EEE7;font-size:12px}
 .stat-row:last-child{border-bottom:none}
 .stat-label{color:#5C5A54}
 .stat-val{font-weight:600;color:#1A1A1A}
-.comment-item{padding:8px 0;border-bottom:1px solid #F0EEE7}
+.stat-val.urgent{color:#DC2626}
+.stat-val.important{color:#D97706}
+.comment-item{padding:7px 0;border-bottom:1px solid #F0EEE7}
 .comment-item:last-child{border-bottom:none}
 .comment-item-title{font-size:11px;font-weight:500;color:#1A1A1A;line-height:1.4;margin-bottom:2px}
 .comment-item-title a{color:inherit;text-decoration:none}
 .comment-item-title a:hover{color:#0D9488}
 .comment-item-date{font-size:10px;color:#B45309;font-weight:500}
-.toc-item{padding:6px 0;border-bottom:1px solid #F0EEE7;display:flex;align-items:center;gap:7px;font-size:11px;color:#3D3D3D;cursor:pointer;transition:color 0.12s}
+.toc-item{padding:5px 0;border-bottom:1px solid #F0EEE7;display:flex;align-items:center;gap:6px;font-size:11px;color:#3D3D3D;cursor:pointer;transition:color .12s}
 .toc-item:last-child{border-bottom:none}
 .toc-item:hover{color:#0D9488}
+.toc-item.active{color:#0D9488;font-weight:600}
+.toc-clear{font-size:10px;color:#0D9488;cursor:pointer;padding:4px 0 8px;border-bottom:1px solid #F0EEE7;margin-bottom:4px}
+.toc-clear:hover{text-decoration:underline}
 .toc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .toc-count{margin-left:auto;font-size:10px;color:#9C9A94;font-weight:600}
 
-/* FOOTER */
-.site-footer{background:#0C1A2E;padding:28px 24px;text-align:center;margin-top:32px}
-.footer-brand{font-family:'Playfair Display',serif;font-size:17px;color:#fff;margin-bottom:6px}
-.footer-sub{font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:3px}
+/* ── PRIORITY BANNER ──────────────────────────────────────────────── */
+.priority-banner{background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:20px}
+.pb-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#DC2626;margin-bottom:7px}
+.pb-item{font-size:12px;color:#7F1D1D;line-height:1.5;padding:4px 0;border-bottom:1px solid #FCA5A5;display:flex;align-items:flex-start;gap:7px}
+.pb-item:last-child{border-bottom:none;padding-bottom:0}
+.pb-item a{color:inherit;text-decoration:none;font-weight:500}
+.pb-item a:hover{text-decoration:underline}
 
-/* LOADING / ERROR */
-.loading-screen{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#5C5A54}
-.loader{width:34px;height:34px;border:3px solid #E8E6DF;border-top-color:#0D9488;border-radius:50%;animation:spin 0.8s linear infinite}
+/* ── FOOTER ───────────────────────────────────────────────────────── */
+.site-footer{background:#0C1A2E;padding:24px;text-align:center;margin-top:24px}
+.footer-brand{font-family:'Playfair Display',serif;font-size:15px;color:#fff;margin-bottom:5px}
+.footer-sub{font-size:10px;color:rgba(255,255,255,.2);margin-bottom:2px}
+
+/* ── LOADING / ERROR ──────────────────────────────────────────────── */
+.loading-screen{min-height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#5C5A54}
+.loader{width:32px;height:32px;border:3px solid #E8E6DF;border-top-color:#0D9488;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-screen{max-width:480px;margin:60px auto;text-align:center;padding:0 24px}
-.error-screen h2{font-size:20px;margin-bottom:8px;color:#DC2626}
+.error-screen{max-width:440px;margin:60px auto;text-align:center;padding:0 24px}
+.error-screen h2{font-size:18px;margin-bottom:8px;color:#DC2626}
 .error-screen p{font-size:13px;color:#5C5A54;line-height:1.6}
-.hidden{display:none}
+.hidden{display:none!important}
+.empty-state{text-align:center;padding:48px 24px;color:#94A3B8}
+.empty-icon{font-size:28px;margin-bottom:8px}
+.empty-msg{font-size:13px;line-height:1.6}
 </style>
 </head>
 <body>
 
+<!-- MASTHEAD -->
 <header class="masthead">
   <div class="masthead-inner">
     <a class="brand" href="#">
@@ -172,92 +254,131 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
           <path d="M16 18l1.5 1.5L20 16" stroke="#fff" stroke-width="1.5"/>
         </svg>
       </div>
-      <div class="brand-line">
-        <span class="brand-name">Healthcare Regulatory &amp; Policy <span>Monitor</span></span>
-        <div class="masthead-note">Weekly healthcare policy briefing, automatically updated every Monday.</div>
+      <div>
+        <div class="brand-name">Healthcare Regulatory &amp; Policy <span>Monitor</span></div>
+        <div class="masthead-note">Weekly intelligence briefing — updated automatically every Monday.</div>
       </div>
     </a>
     <div class="edition-switcher">
       <button class="edition-btn active" id="btn-consulting" onclick="switchEdition('consulting')">📊 Consulting</button>
-      <button class="edition-btn" id="btn-policy" onclick="switchEdition('policy')">🏛️ Policy</button>
+      <button class="edition-btn" id="btn-policy" onclick="switchEdition('policy')">🏛 Policy</button>
     </div>
   </div>
 </header>
 
-<!-- FILTER BAR -->
-<div class="filter-bar">
-  <div class="filter-inner">
-    <div class="filter-row-top">
-      <div class="filter-group">
-        <span class="filter-label">Period</span>
-        <div class="filter-btns">
-          <button class="filter-btn active" id="days-7"  onclick="setDays(7)">Last 7 days</button>
-          <button class="filter-btn"        id="days-30" onclick="setDays(30)">Last 30 days</button>
-          <button class="filter-btn"        id="days-60" onclick="setDays(60)">Last 60 days</button>
-        </div>
-      </div>
-      <div class="filter-divider"></div>
-      <div class="filter-group">
-        <span class="filter-label">Sort</span>
-        <div class="filter-btns">
-          <button class="filter-btn active" id="sort-category"   onclick="setSort('category')">By Category</button>
-          <button class="filter-btn"        id="sort-importance" onclick="setSort('importance')">By Importance</button>
-        </div>
-      </div>
-      <div class="filter-divider"></div>
+<!-- CONTROL BAR -->
+<div class="control-bar">
+  <div class="control-inner">
+    <div class="view-group" id="view-group">
+      <button class="view-btn active" data-view="ranked" onclick="setView('ranked')">Ranked</button>
+      <span class="view-sep"></span>
+      <button class="view-btn" data-view="enforcement" onclick="setView('enforcement')">Enforcement &amp; Risk</button>
+      <button class="view-btn" data-view="legislation" onclick="setView('legislation')">Legislation</button>
+      <button class="view-btn" data-view="public" onclick="setView('public')">Public Impact</button>
+      <button class="view-btn" data-view="deadlines" onclick="setView('deadlines')">Deadlines</button>
+    </div>
+    <div class="control-right">
       <div class="search-wrap">
-        <svg class="search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input class="search-input" id="search-input" type="text" placeholder="Search articles…" oninput="setSearch(this.value)" autocomplete="off" spellcheck="false">
-        <button class="search-clear" id="search-clear" onclick="clearSearch()" aria-label="Clear search">×</button>
+        <svg class="search-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input" id="search-input" type="text" placeholder="Search…" oninput="setSearch(this.value)" autocomplete="off" spellcheck="false">
+        <button class="search-clear hidden" id="search-clear" onclick="clearSearch()">×</button>
       </div>
+      <button class="date-toggle-btn" id="date-toggle-btn" onclick="toggleDateFilter()">Date Filter</button>
       <span class="results-count" id="results-count"></span>
     </div>
-    <div class="filter-row-cats">
-      <span class="filter-label">Category</span>
-      <div id="cat-filter-btns">
-        <button class="filter-btn active" id="cat-all" onclick="setCat('all')">All</button>
-      </div>
-    </div>
+  </div>
+  <div id="date-filter-row" class="date-filter-row hidden">
+    <span class="filter-label">From</span>
+    <input type="date" class="date-input" id="date-from" onchange="applyDateChange()">
+    <span class="filter-label">to</span>
+    <input type="date" class="date-input" id="date-to" onchange="applyDateChange()">
+    <button class="clear-date-btn" onclick="clearDateFilter()">Clear</button>
+    <span class="date-filter-note">Items with unknown publication dates are surfaced separately, not silently included.</span>
   </div>
 </div>
 
 <main id="main-content">
   <div class="loading-screen" id="loading">
     <div class="loader"></div>
-    <p>Loading this week's briefing...</p>
+    <p>Loading this week's briefing…</p>
   </div>
   <div class="error-screen hidden" id="error">
     <h2>Newsletter not yet generated</h2>
-    <p>Run <code>scraper.py</code> to fetch content and push <code>newsletter_data.json</code> to your GitHub repo. The newsletter appears here automatically once the data file is published.</p>
+    <p>Run <code>pipeline/scrape.py</code> then <code>pipeline/generate.py</code> and push <code>newsletter_data.json</code> to your repo. The dashboard appears automatically once the data file is published.</p>
   </div>
   <div id="content" class="hidden"></div>
 </main>
 
 <footer class="site-footer">
-  <div class="footer-brand">Healthcare Regulatory &amp; Policy Monitor · Healthcare policy briefing prototype</div>
+  <div class="footer-brand">Healthcare Regulatory &amp; Policy Monitor</div>
   <div class="footer-sub" id="footer-date"></div>
-  <div class="footer-sub">Regulatory &amp; Policy Briefing · Sources cited from official government and research publications</div>
+  <div class="footer-sub">Sources cited from official government and research publications · Built with Claude API</div>
 </footer>
 
 <script>
+// ── CONSTANTS & STATE ──────────────────────────────────────────────
 const DATA_URL = './newsletter_data.json';
-
 const CAT_COLORS = [
   '#0D9488','#0F766E','#0891B2','#0E7490','#7C3AED',
   '#6D28D9','#B45309','#92400E','#DC2626','#9F1239',
   '#064E3B','#1E40AF','#065F46','#0369A1',
 ];
+const URGENCY_ORDER = { urgent: 0, important: 1, routine: 2, discard: 3 };
 
 let newsletterData = null;
-const URL_PARAMS = new URLSearchParams(window.location.search);
-let currentEdition = URL_PARAMS.get('edition') === 'policy' ? 'policy' : 'consulting';
-let currentDays     = 7;
-let currentSort     = 'category';
-let currentCat      = 'all';
-let currentSearch   = '';
-let allArticles     = [];   // full unfiltered set for current edition
+let currentEdition = (new URLSearchParams(location.search).get('edition') === 'policy') ? 'policy' : 'consulting';
+let currentView    = 'ranked';
+let currentSearch  = '';
+let currentCategory = null;   // null = all categories
+let dateFilter     = { active: false, from: null, to: null };
+let whatsNewOpen   = true;
+let allArticles    = [];
 
-// ── INIT ──────────────────────────────────────────────────────
+const rankSort  = (a, b) =>
+  (URGENCY_ORDER[a.urgency] ?? 2) - (URGENCY_ORDER[b.urgency] ?? 2) ||
+  (b.importance_score || 0) - (a.importance_score || 0);
+const scoreSort = (a, b) => (b.importance_score || 0) - (a.importance_score || 0);
+
+const VIEWS = {
+  ranked: {
+    label: 'Ranked',
+    desc: null,
+    matchFn: () => true,
+    sortFn: rankSort,
+  },
+  enforcement: {
+    label: 'Enforcement & Risk',
+    desc: 'Compliance actions, fraud & abuse enforcement, cybersecurity, and court decisions — sorted by importance score.',
+    matchFn: a =>
+      /compliance|enforcement|hipaa|cybersecurity|false claims|fraud|stark|anti-kickback|oig/i.test(a.category || '') ||
+      /Enforcement Action|Court Opinion|OIG Report/.test(a.doc_type || ''),
+    sortFn: scoreSort,
+  },
+  legislation: {
+    label: 'Legislation',
+    desc: 'Bills, congressional activity, CRS reports, CBO scores, and federal budget items — sorted by importance score.',
+    matchFn: a =>
+      /legislation|congressional|crs report|budget|appropriations/i.test(a.category || '') ||
+      /Bill|Committee Bill|Bill Summary|CRS Report/.test(a.doc_type || ''),
+    sortFn: scoreSort,
+  },
+  public: {
+    label: 'Public Impact',
+    desc: 'Items with significant impact on patients, beneficiaries, and the general public — sorted by policy relevance score.',
+    matchFn: a =>
+      (a.policy_relevance || 0) >= 55 ||
+      /equity|sdoh|access|uninsured|maternal|behavioral|substance|rural|community health/i.test(a.category || ''),
+    sortFn: (a, b) => (b.policy_relevance || 0) - (a.policy_relevance || 0),
+  },
+  deadlines: {
+    label: 'Deadlines',
+    desc: 'Proposed rules and notices with open comment periods — soonest deadline first.',
+    matchFn: a => a.is_comment_period || !!a.comment_deadline,
+    sortFn: (a, b) => (a.comment_deadline || '9999').localeCompare(b.comment_deadline || '9999'),
+  },
+};
+
+// ── INIT ──────────────────────────────────────────────────────────
 async function init() {
   try {
     const r = await fetch(DATA_URL + '?t=' + Date.now());
@@ -266,395 +387,614 @@ async function init() {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.remove('hidden');
     renderEdition(currentEdition);
-  } catch(e) {
+  } catch (e) {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('error').classList.remove('hidden');
   }
 }
 
-// ── SWITCH EDITION ────────────────────────────────────────────
+// ── EDITION SWITCH ─────────────────────────────────────────────────
 function switchEdition(ed) {
   currentEdition = ed;
-  currentCat = 'all';
-  currentSearch = '';
+  currentSearch  = '';
+  currentView    = 'ranked';
+  currentCategory = null;
+  dateFilter     = { active: false, from: null, to: null };
   const si = document.getElementById('search-input');
-  if (si) { si.value = ''; document.getElementById('search-clear').classList.remove('visible'); }
+  if (si) { si.value = ''; document.getElementById('search-clear').classList.add('hidden'); }
+  document.getElementById('date-filter-row').classList.add('hidden');
+  document.getElementById('date-toggle-btn').classList.remove('active');
   window.history.replaceState(null, '', '?edition=' + ed);
-  document.getElementById('btn-consulting').classList.toggle('active', ed==='consulting');
-  document.getElementById('btn-policy').classList.toggle('active', ed==='policy');
+  document.getElementById('btn-consulting').classList.toggle('active', ed === 'consulting');
+  document.getElementById('btn-policy').classList.toggle('active', ed === 'policy');
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'ranked'));
   renderEdition(ed);
-  window.scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── FILTER CONTROLS ───────────────────────────────────────────
-function setDays(d) {
-  currentDays = d;
-  [7,30,60].forEach(n => document.getElementById('days-'+n).classList.toggle('active', n===d));
-  applyFilters();
+// ── VIEW SWITCH ────────────────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  renderView();
 }
 
-function setSort(s) {
-  currentSort = s;
-  ['category','importance'].forEach(n => document.getElementById('sort-'+n).classList.toggle('active', n===s));
-  applyFilters();
+// ── CATEGORY FILTER (from sidebar TOC) ─────────────────────────────
+function setCategory(cat) {
+  // Toggle: clicking the active category again clears it.
+  currentCategory = (currentCategory === cat) ? null : cat;
+  renderView();
+  renderSidebar(newsletterData[currentEdition]);
+  scrollToTier();
+}
+function clearCategory() {
+  currentCategory = null;
+  renderView();
+  renderSidebar(newsletterData[currentEdition]);
 }
 
-function setCat(c) {
-  currentCat = c;
-  document.querySelectorAll('#cat-filter-btns .filter-btn').forEach(b => {
-    b.classList.toggle('active', b.id === 'cat-'+(c==='all'?'all':c.replace(/\W+/g,'-').toLowerCase()));
-  });
-  applyFilters();
-}
-
+// ── SEARCH ─────────────────────────────────────────────────────────
 function setSearch(q) {
   currentSearch = q.trim().toLowerCase();
-  document.getElementById('search-clear').classList.toggle('visible', currentSearch.length > 0);
-  applyFilters();
+  document.getElementById('search-clear').classList.toggle('hidden', !currentSearch);
+  renderView();
 }
-
 function clearSearch() {
   document.getElementById('search-input').value = '';
   setSearch('');
 }
 
-// ── APPLY FILTERS ─────────────────────────────────────────────
-function buildEditorNoteText(data, filtered) {
-  const timeframe = currentDays === 7 ? 'last 7 days' : currentDays === 30 ? 'last 30 days' : 'last 60 days';
-
-  if (!filtered || filtered.length === 0) {
-    return `No articles match this view. Try expanding the date range or selecting a different category.`;
+// ── DATE FILTER ────────────────────────────────────────────────────
+function toggleDateFilter() {
+  dateFilter.active = !dateFilter.active;
+  document.getElementById('date-filter-row').classList.toggle('hidden', !dateFilter.active);
+  document.getElementById('date-toggle-btn').classList.toggle('active', dateFilter.active);
+  if (!dateFilter.active) {
+    dateFilter.from = null; dateFilter.to = null;
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
   }
-
-  const total = filtered.length;
-  const urgencyCounts = filtered.reduce((acc, a) => {
-    const key = a.urgency || 'routine';
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
-
-  let summary = `Showing ${total} article${total === 1 ? '' : 's'} from the ${timeframe}.`;
-
-  if (urgencyCounts.urgent) {
-    summary += ` ${urgencyCounts.urgent} urgent`;
-    if (urgencyCounts.important) summary += `, ${urgencyCounts.important} notable`;
-    summary += '.';
-  } else if (urgencyCounts.important) {
-    summary += ` ${urgencyCounts.important} notable item${urgencyCounts.important === 1 ? '' : 's'}.`;
-  }
-
-  // Category-filtered view: use per-category note if available
-  if (currentCat !== 'all') {
-    const catNote = data && data.category_notes && data.category_notes[currentCat];
-    return catNote ? `${summary} ${catNote}` : summary;
-  }
-
-  // All-categories view: top topics + full editor's note
-  const topCats = Object.entries(
-    filtered.reduce((acc, a) => { const c = a.category || ''; acc[c] = (acc[c] || 0) + 1; return acc; }, {})
-  ).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([c]) => c);
-
-  if (topCats.length > 0) summary += ` Top topics: ${topCats.join(' and ')}.`;
-
-  const baseNote = data && data.editors_note ? ` ${data.editors_note}` : '';
-  return (summary + baseNote).trim();
+  renderView();
+}
+function applyDateChange() {
+  const f = document.getElementById('date-from').value;
+  const t = document.getElementById('date-to').value;
+  dateFilter.from = f ? new Date(f + 'T00:00:00') : null;
+  dateFilter.to   = t ? new Date(t + 'T23:59:59') : null;
+  renderView();
+}
+function clearDateFilter() {
+  dateFilter.active = false; dateFilter.from = null; dateFilter.to = null;
+  document.getElementById('date-from').value = '';
+  document.getElementById('date-to').value = '';
+  document.getElementById('date-filter-row').classList.add('hidden');
+  document.getElementById('date-toggle-btn').classList.remove('active');
+  renderView();
 }
 
-function updateEditorNote(filtered) {
-  const noteEl = document.getElementById('editors-note-text');
-  if (!noteEl || !newsletterData) return;
-  const data = newsletterData[currentEdition];
-  noteEl.textContent = buildEditorNoteText(data, filtered);
-}
+// ── FILTER PIPELINE ────────────────────────────────────────────────
+function applyFilters(articles) {
+  let dated    = articles;
+  let unknown  = [];
 
-function applyFilters() {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - currentDays);
+  // Category filter (from sidebar TOC)
+  if (currentCategory) {
+    dated = dated.filter(a => a.category === currentCategory);
+  }
 
-  // Filter by date and category
-  let filtered = allArticles.filter(a => {
-    const pub = new Date(a.published_iso || a.published || '2000-01-01');
-    if (pub < cutoff) return false;
-    if (currentCat !== 'all' && a.category !== currentCat) return false;
-    if (currentSearch) {
-      const text = [a.headline, a.title, a.summary, a.source_name, a.category].join(' ').toLowerCase();
-      if (!text.includes(currentSearch)) return false;
+  // Date filter: split known-date from date_unknown (operates on the
+  // already category-filtered set so filters compose correctly)
+  if (dateFilter.active && (dateFilter.from || dateFilter.to)) {
+    const source = dated;
+    dated   = [];
+    unknown = [];
+    for (const a of source) {
+      if (a.date_unknown) { unknown.push(a); continue; }
+      const pub = new Date(a.published_iso || a.published || '2000-01-01');
+      if (dateFilter.from && pub < dateFilter.from) continue;
+      if (dateFilter.to   && pub > dateFilter.to)   continue;
+      dated.push(a);
     }
-    return true;
-  });
-
-  // Update count
-  document.getElementById('results-count').textContent =
-    filtered.length + ' article' + (filtered.length !== 1 ? 's' : '');
-
-  const emptyEl = document.getElementById('no-results');
-  if (emptyEl) {
-    emptyEl.style.display = filtered.length === 0 ? '' : 'none';
   }
 
-  // Show/hide cards
-  document.querySelectorAll('.article-card').forEach(el => {
-    const id = el.dataset.id;
-    const art = allArticles.find(a => a._id === id);
-    if (!art) { el.style.display='none'; return; }
-    const pub = new Date(art.published_iso || art.published || '2000-01-01');
-    const inDate   = pub >= cutoff;
-    const inCat    = currentCat === 'all' || art.category === currentCat;
-    const inSearch = !currentSearch || [art.headline, art.title, art.summary, art.source_name, art.category].join(' ').toLowerCase().includes(currentSearch);
-    el.style.display = (inDate && inCat && inSearch) ? '' : 'none';
-  });
-
-  // Show/hide category sections (by-category view)
-  document.querySelectorAll('.cat-section').forEach(sec => {
-    const visibleCards = sec.querySelectorAll('.article-card:not([style*="display: none"])');
-    sec.style.display = visibleCards.length > 0 ? '' : 'none';
-    // Update count badge
-    const badge = sec.querySelector('.cat-count');
-    if (badge) badge.textContent = visibleCards.length;
-  });
-
-  // Sort view
-  const mainCol = document.getElementById('main-col');
-  if (!mainCol) return;
-  if (currentSort === 'importance') {
-    mainCol.classList.add('view-by-importance');
-    renderFlatList(filtered);
-  } else {
-    mainCol.classList.remove('view-by-importance');
-    const flatList = document.getElementById('flat-list');
-    if (flatList) flatList.style.display = 'none';
+  // Search
+  if (currentSearch) {
+    const q = currentSearch;
+    const pass = a => [a.headline, a.title, a.summary, a.so_what, a.source_name, a.category]
+      .join(' ').toLowerCase().includes(q);
+    dated   = dated.filter(pass);
+    unknown = unknown.filter(pass);
   }
 
-  // Update sidebar TOC counts
-  updateSidebarTOC(filtered);
-  updateEditorNote(filtered);
+  return { dated, unknown };
 }
 
-function renderFlatList(articles) {
-  let flatList = document.getElementById('flat-list');
-  if (!flatList) {
-    flatList = document.createElement('div');
-    flatList.id = 'flat-list';
-    const mainCol = document.getElementById('main-col');
-    mainCol.appendChild(flatList);
-  }
-  flatList.style.display = '';
-
-  const urgOrder = {urgent:0,important:1,routine:2};
-  const sorted = [...articles].sort((a,b) =>
-    (urgOrder[a.urgency]||2) - (urgOrder[b.urgency]||2)
-  );
-
-  flatList.innerHTML = sorted.map(a => buildCardHTML(a, true)).join('');
-}
-
-function updateSidebarTOC(filtered) {
-  const counts = {};
-  filtered.forEach(a => { counts[a.category] = (counts[a.category]||0)+1; });
-  document.querySelectorAll('.toc-item').forEach(el => {
-    const cat = el.dataset.cat;
-    const count = counts[cat] || 0;
-    el.style.display = count > 0 ? '' : 'none';
-    const badge = el.querySelector('.toc-count');
-    if (badge) badge.textContent = count;
-  });
-}
-
-// ── RENDER EDITION ────────────────────────────────────────────
+// ── RENDER EDITION ────────────────────────────────────────────────
 function renderEdition(ed) {
   const data = newsletterData[ed];
-  document.getElementById('btn-consulting').classList.toggle('active', ed==='consulting');
-  document.getElementById('btn-policy').classList.toggle('active', ed==='policy');
   if (!data || !Array.isArray(data.articles)) {
-    document.getElementById('content').innerHTML = `<div class="error-screen"><h2>Newsletter data is invalid</h2><p>The data file appears malformed or incomplete. Validate <code>newsletter_data.json</code> and refresh.</p></div>`;
+    document.getElementById('content').innerHTML =
+      '<div class="error-screen"><h2>Invalid data</h2><p>newsletter_data.json appears malformed.</p></div>';
     return;
   }
 
-  allArticles = (data.articles || []).map((a, i) => ({...a, _id: String(i)}));
+  allArticles = data.articles.map((a, i) => ({ ...a, _id: String(i) }));
 
-  // Build dynamic category list from actual articles
-  const catSet = [];
-  allArticles.forEach(a => {
-    if (a.category && !catSet.includes(a.category)) catSet.push(a.category);
-  });
-
-  const edLabel  = ed === 'consulting' ? 'Consulting Edition' : 'Policy Edition';
-  const genDate  = new Date(newsletterData.generated_at);
-  const dateStr  = genDate.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const genDate = new Date(newsletterData.generated_at);
+  const dateStr = genDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('footer-date').textContent = 'Updated ' + dateStr;
 
-  // Build category filter pills dynamically
-  const catBtns = document.getElementById('cat-filter-btns');
-  catBtns.innerHTML = '<button class="filter-btn active" id="cat-all" onclick="setCat(\'all\')">All</button>';
-  catSet.forEach(cat => {
-    const btn = document.createElement('button');
-    const slug = cat.replace(/\W+/g,'-').toLowerCase();
-    btn.className = 'filter-btn';
-    btn.id = 'cat-' + slug;
-    btn.textContent = cat;
-    btn.onclick = () => setCat(cat);
-    catBtns.appendChild(btn);
-  });
-
-  // Group articles by category
-  const grouped = {};
-  catSet.forEach(c => grouped[c] = []);
-  allArticles.forEach(a => {
-    if (!grouped[a.category]) grouped[a.category] = [];
-    grouped[a.category].push(a);
-  });
-  const urgOrder = {urgent:0,important:1,routine:2};
-  Object.values(grouped).forEach(arr =>
-    arr.sort((a,b) => (urgOrder[a.urgency]||2)-(urgOrder[b.urgency]||2))
-  );
-
-  const urgentItems = allArticles.filter(a => a.urgency === 'urgent').slice(0,4);
-  const commentItems = allArticles.filter(a => a.is_comment_period && a.comment_deadline).slice(0,6);
-
-  const totalAll   = allArticles.length;
-  const urgentAll  = allArticles.filter(a=>a.urgency==='urgent').length;
-  const importAll  = allArticles.filter(a=>a.urgency==='important').length;
+  const edLabel = ed === 'consulting' ? 'Consulting Edition' : 'Policy Edition';
 
   let html = '';
 
+  // What's New panel
+  html += buildWhatsNewPanel(data.whats_new);
+
   // Issue header
-  html += `
-<div class="issue-header">
-  <div class="issue-meta">${edLabel} &nbsp;·&nbsp; Week of ${newsletterData.week_of}</div>
-  <h1 class="issue-title">${esc(data.subject_line||'Healthcare Intelligence Briefing')}</h1>
-  <p class="issue-theme">${esc(data.theme_of_week||'')}</p>
-  <div class="issue-dateline">Updated ${dateStr}</div>
-</div>
-<div class="en-wrap">
-  <div class="editors-note">
-    <div class="en-label">Editor's Note</div>
-    <p class="en-text" id="editors-note-text">${esc(data.editors_note||'')}</p>
+  html += `<div class="issue-header">
+    <div class="issue-meta">${edLabel} &nbsp;·&nbsp; Week of ${esc(newsletterData.week_of)}</div>
+    <h1 class="issue-title">${esc(data.subject_line || 'Healthcare Intelligence Briefing')}</h1>
+    <p class="issue-theme">${esc(data.theme_of_week || '')}</p>
+    <div class="issue-dateline">Updated ${esc(dateStr)}</div>
   </div>
-</div>`;
-
-  // Page body
-  html += `<div class="page-body"><div class="main-col" id="main-col">`;
-
-  // Priority banner
-  if (urgentItems.length > 0) {
-    html += `<div class="priority-banner">
-  <div class="pb-label">🔴 Priority Items</div>`;
-    urgentItems.forEach(a => {
-      html += `<div class="pb-item"><span>▸</span>
-    <span><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a>
-    ${a.implication?'— '+esc(a.implication):''}</span></div>`;
-    });
-    html += `</div>`;
-  }
-
-  // Category sections
-  catSet.forEach((cat, catIdx) => {
-    const articles = grouped[cat];
-    if (!articles||!articles.length) return;
-    const color = CAT_COLORS[catIdx % CAT_COLORS.length];
-    html += `<div class="cat-section" id="cat-sec-${catIdx}">
-  <div class="cat-header">
-    <div class="cat-bar" style="background:${color}"></div>
-    <h2 class="cat-title">${esc(cat)}</h2>
-    <span class="cat-count">${articles.length}</span>
+  <div class="en-wrap">
+    <div class="editors-note">
+      <div class="en-label">Editor's Note</div>
+      <p class="en-text" id="editors-note-text">${esc(data.editors_note || '')}</p>
+    </div>
   </div>`;
-    articles.forEach(a => { html += buildCardHTML(a, false); });
-    html += `</div>`;
-  });
 
-  html += `</div>`; // end main-col
-
-  // Sidebar
-  html += `<aside class="sidebar">`;
-
-  // Stats
-  html += `<div class="sidebar-card">
-  <div class="sidebar-header"><div class="sidebar-title">This Issue</div></div>
-  <div class="sidebar-body">
-    <div class="stat-row"><span class="stat-label">Total articles</span><span class="stat-val">${totalAll}</span></div>
-    <div class="stat-row"><span class="stat-label">Priority</span><span class="stat-val" style="color:#DC2626">${urgentAll}</span></div>
-    <div class="stat-row"><span class="stat-label">Notable</span><span class="stat-val" style="color:#D97706">${importAll}</span></div>
-    <div class="stat-row"><span class="stat-label">Categories</span><span class="stat-val">${catSet.length}</span></div>
-    <div class="stat-row"><span class="stat-label">Week of</span><span class="stat-val">${newsletterData.week_of}</span></div>
-  </div>
-</div>`;
-
-  // Comment periods
-  if (commentItems.length > 0) {
-    html += `<div class="sidebar-card">
-  <div class="sidebar-header"><div class="sidebar-title">📋 Comment Periods Open</div></div>
-  <div class="sidebar-body">`;
-    commentItems.forEach(a => {
-      html += `<div class="comment-item">
-    <div class="comment-item-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
-    <div class="comment-item-date">Closes: ${esc(a.comment_deadline)}</div>
-  </div>`;
-    });
-    html += `</div></div>`;
-  }
-
-  // TOC
-  html += `<div class="sidebar-card">
-  <div class="sidebar-header"><div class="sidebar-title">In This Issue</div></div>
-  <div class="sidebar-body">`;
-  catSet.forEach((cat, catIdx) => {
-    const color = CAT_COLORS[catIdx % CAT_COLORS.length];
-    html += `<div class="toc-item" data-cat="${esc(cat)}" onclick="scrollToCat('cat-sec-${catIdx}')">
-    <span class="toc-dot" style="background:${color}"></span>
-    <span>${esc(cat)}</span>
-    <span class="toc-count">${grouped[cat].length}</span>
-  </div>`;
-  });
-  html += `</div></div>`;
-
-  html += `</aside></div>`; // end sidebar + page-body
-
-  html += `</aside></div>`;
-  html += `<div class="empty-state hidden" id="no-results">
-    <div class="empty-icon">🔎</div>
-    <div class="empty-msg">No articles match these filters. Try expanding the date range or selecting a different category.</div>
+  // Page body (main col + sidebar)
+  html += `<div class="page-body">
+    <div class="main-col" id="main-col"></div>
+    <aside class="sidebar" id="sidebar-col"></aside>
   </div>`;
 
   document.getElementById('content').innerHTML = html;
-
-  // Apply default filter (7 days)
-  currentCat = 'all';
-  applyFilters();
-  updateEditorNote();
+  renderSidebar(data);
+  renderView();
 }
 
-function buildCardHTML(a, showCatTag) {
-  const pub = a.published ? new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
-  const urg = a.urgency || 'routine';
-  return `<div class="article-card" data-id="${esc(a._id||'')}">
-  <div class="card-inner">
-    <div class="urgency-stripe ${urg}"></div>
-    <div class="card-body">
-      <div class="card-top">
-        <div class="card-headline"><a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
-        ${urg==='urgent'?'<span class="urgency-badge urgent">🔴 Urgent</span>':urg==='important'?'<span class="urgency-badge important">🟡 Important</span>':''}
+// ── WHAT'S NEW PANEL ──────────────────────────────────────────────
+function buildWhatsNewPanel(wn) {
+  if (!wn) return '';  // first run — no prior data
+
+  const count    = wn.count || 0;
+  const urgent   = wn.urgent_count || 0;
+  const impCount = wn.important_count || 0;
+  const sinceDate = wn.previous_run_date || 'last run';
+
+  let badgesHtml = `<span class="wn-badge new">${count} new</span>`;
+  if (urgent > 0) badgesHtml += `<span class="wn-badge urgent">${urgent} urgent</span>`;
+
+  if (count === 0) {
+    return `<div class="wn-panel">
+      <div class="wn-inner">
+        <div class="wn-header">
+          <span class="wn-dot"></span>
+          <span class="wn-title">Up to date <span class="wn-since">since ${esc(sinceDate)}</span></span>
+          <span style="margin-left:8px;font-size:11px;color:rgba(167,243,208,.5)">No new items since last run.</span>
+        </div>
       </div>
-      <div class="card-meta">
-        <span class="source-pill"><a href="${esc(a.source_url||'#')}" target="_blank" rel="noopener">${esc((a.source_name||'').split('—')[0].trim())}</a></span>
-        ${a.doc_type?`<span class="doc-type-pill">${esc(a.doc_type)}</span>`:''}
-        ${pub?`<span class="date-tag">${pub}</span>`:''}
-        ${showCatTag&&a.category?`<span class="cat-tag">${esc(a.category)}</span>`:''}
+    </div>`;
+  }
+
+  const articles = (wn.articles || []).slice(0, 12);
+  const cardsHtml = articles.map(a => {
+    const urg = a.urgency || 'routine';
+    const pub = a.published ? new Date(a.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    return `<div class="wn-card">
+      <div class="wn-card-stripe ${urg}"></div>
+      <div class="wn-card-body">
+        <div class="wn-card-headline"><a href="${esc(a.url || '#')}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a></div>
+        <div class="wn-card-meta">${esc((a.source_name || '').split('—')[0].trim())}${pub ? ' · ' + pub : ''}</div>
       </div>
-      ${a.summary?`<p class="card-summary">${esc(a.summary)}</p>`:''}
-      ${a.implication?`<div class="card-implication"><strong>Key takeaway:</strong> ${esc(a.implication)}</div>`:''}
-      ${a.comment_deadline?`<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const moreCount = count - articles.length;
+  const moreNote  = moreCount > 0 ? `<div class="wn-empty">+ ${moreCount} more new item${moreCount !== 1 ? 's' : ''} in the ranked view below.</div>` : '';
+
+  return `<div class="wn-panel" id="wn-panel">
+    <div class="wn-inner">
+      <div class="wn-header" onclick="toggleWhatsNew()">
+        <span class="wn-dot"></span>
+        <span class="wn-title">New since <span class="wn-since">${esc(sinceDate)}</span></span>
+        <div class="wn-badges">${badgesHtml}</div>
+        <span class="wn-chevron open" id="wn-chevron">▾</span>
+      </div>
+      <div class="wn-body" id="wn-body">
+        <div class="wn-grid">${cardsHtml}</div>
+        ${moreNote}
+      </div>
     </div>
-  </div>
-</div>`;
+  </div>`;
 }
 
-function scrollToCat(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({behavior:'smooth',block:'start'});
+function toggleWhatsNew() {
+  const body    = document.getElementById('wn-body');
+  const chevron = document.getElementById('wn-chevron');
+  if (!body) return;
+  whatsNewOpen = !whatsNewOpen;
+  body.classList.toggle('hidden', !whatsNewOpen);
+  chevron.classList.toggle('open', whatsNewOpen);
 }
 
+// ── RENDER VIEW ───────────────────────────────────────────────────
+function renderView() {
+  const { dated, unknown } = applyFilters(allArticles);
+  const viewCfg = VIEWS[currentView];
+
+  let articles = [...dated];
+  if (currentView !== 'ranked') {
+    articles.sort(viewCfg.sortFn);
+  } else {
+    articles.sort(rankSort);
+  }
+
+  // Update count
+  const total = dated.length + unknown.length;
+  document.getElementById('results-count').textContent = total + ' article' + (total !== 1 ? 's' : '');
+
+  const mainCol = document.getElementById('main-col');
+  if (!mainCol) return;
+
+  if (currentView === 'ranked') {
+    mainCol.innerHTML = renderRankedView(articles, unknown);
+  } else {
+    mainCol.innerHTML = renderQuestionView(articles, unknown, viewCfg);
+  }
+}
+
+// ── RANKED VIEW ───────────────────────────────────────────────────
+function renderRankedView(articles, unknownArticles) {
+  const urgent    = articles.filter(a => a.urgency === 'urgent');
+  const important = articles.filter(a => a.urgency === 'important');
+  const routine   = articles.filter(a => a.urgency === 'routine');
+  const discard   = articles.filter(a => a.urgency === 'discard');
+
+  let html = '';
+
+  // Priority banner (top 4 urgent items quick-scan)
+  if (urgent.length > 0) {
+    html += `<div class="priority-banner">
+      <div class="pb-label">🔴 Priority Items</div>`;
+    urgent.slice(0, 4).forEach(a => {
+      html += `<div class="pb-item"><span>▸</span>
+        <span><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a>${a.now_what ? ' — ' + esc(a.now_what) : ''}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Urgent section — full cards
+  if (urgent.length > 0) {
+    html += `<div class="tier-section">
+      <div class="tier-label"><span class="tier-dot urgent"></span><span class="tier-name">Priority</span><span class="tier-count">${urgent.length}</span></div>
+      ${urgent.map(a => buildFullCard(a)).join('')}
+    </div>`;
+  }
+
+  // Important section — compact expandable
+  if (important.length > 0) {
+    html += `<div class="tier-section">
+      <div class="tier-label"><span class="tier-dot important"></span><span class="tier-name">Important</span><span class="tier-count">${important.length}</span></div>
+      ${important.map(a => buildCompactCard(a)).join('')}
+    </div>`;
+  }
+
+  // Routine section — lighter cards
+  if (routine.length > 0) {
+    html += `<div class="tier-section">
+      <div class="tier-label"><span class="tier-dot routine"></span><span class="tier-name">Routine</span><span class="tier-count">${routine.length}</span></div>
+      ${routine.map(a => buildRoutineCard(a)).join('')}
+    </div>`;
+  }
+
+  // Discard drawer
+  if (discard.length > 0) {
+    html += `<div class="drawer-section">
+      <button class="drawer-btn" onclick="toggleDrawer(this)">Show ${discard.length} additional item${discard.length !== 1 ? 's' : ''} ▾</button>
+      <div class="drawer-content">
+        ${discard.map(a => buildMinimalCard(a)).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Date unknown section (only shown when date filter is active)
+  if (unknownArticles.length > 0) {
+    html += `<div class="tier-section" style="margin-top:24px">
+      <div class="tier-label"><span class="tier-dot unknown"></span><span class="tier-name">Date Unknown</span><span class="tier-count">${unknownArticles.length}</span></div>
+      <div class="date-unknown-note">These items have no confirmed publication date. They cannot be reliably included in or excluded from the date range above, so they are shown separately.</div>
+      ${unknownArticles.map(a => buildCompactCard(a)).join('')}
+    </div>`;
+  }
+
+  if (!html) {
+    html = `<div class="empty-state"><div class="empty-icon">🔎</div><div class="empty-msg">No articles match the current filters.</div></div>`;
+  }
+
+  return html;
+}
+
+// ── QUESTION VIEW ─────────────────────────────────────────────────
+function renderQuestionView(articles, unknownArticles, viewCfg) {
+  const matching    = articles.filter(viewCfg.matchFn);
+  const nonMatching = articles.filter(a => !viewCfg.matchFn(a));
+
+  let html = '';
+
+  if (viewCfg.desc) {
+    html += `<div class="tier-view-desc">${esc(viewCfg.desc)}</div>`;
+  }
+
+  if (matching.length === 0) {
+    html += `<div class="empty-state"><div class="empty-icon">🔎</div><div class="empty-msg">No items match this view with the current filters.</div></div>`;
+  } else {
+    // Show as tiered cards within the matching set
+    matching.forEach(a => {
+      if ((a.importance_score || 0) >= 65 || a.urgency === 'urgent') {
+        html += buildFullCard(a, true);
+      } else {
+        html += buildCompactCard(a, true);
+      }
+    });
+  }
+
+  if (nonMatching.length > 0) {
+    html += `<div class="drawer-section" style="margin-top:16px">
+      <button class="drawer-btn" onclick="toggleDrawer(this)">Show ${nonMatching.length} other item${nonMatching.length !== 1 ? 's' : ''} not matching this view ▾</button>
+      <div class="drawer-content">
+        ${nonMatching.map(a => buildMinimalCard(a)).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (unknownArticles.length > 0) {
+    html += `<div class="tier-section" style="margin-top:24px">
+      <div class="tier-label"><span class="tier-dot unknown"></span><span class="tier-name">Date Unknown</span><span class="tier-count">${unknownArticles.length}</span></div>
+      <div class="date-unknown-note">These items have no confirmed publication date and are shown separately from the date-filtered results above.</div>
+      ${unknownArticles.map(a => buildCompactCard(a, true)).join('')}
+    </div>`;
+  }
+
+  return html;
+}
+
+// ── CARD BUILDERS ─────────────────────────────────────────────────
+function buildFullCard(a, showCatTag) {
+  const pub = a.date_unknown
+    ? '<span class="date-unknown-tag">date unknown</span>'
+    : (a.published ? `<span class="date-tag">${new Date(a.published).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'})}</span>` : '');
+  const urg = a.urgency || 'routine';
+  const score = (a.importance_score != null) ? `<span class="importance-tag">${a.importance_score}</span>` : '';
+
+  const soWhatHtml = a.so_what ? `<div class="card-so-what"><strong>Analysis</strong>${esc(a.so_what)}</div>` : '';
+  const nowWhatHtml = a.now_what ? `<div class="card-now-what"><strong>→ Now what:</strong> ${esc(a.now_what)}</div>` : '';
+  const deadlineHtml = a.comment_deadline ? `<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>` : '';
+
+  const confHtml = a.confidence_note
+    ? `<div class="confidence-note">${esc(a.confidence_note)}</div>` : '';
+
+  let sbHtml = '';
+  const sb = a.stakeholder_balance;
+  if (sb && typeof sb === 'object') {
+    sbHtml = `<button class="sb-toggle" onclick="toggleSB(event,this)">Stakeholder Analysis ▾</button>
+    <div class="sb-body">
+      <div class="sb-cell"><div class="sb-cell-label">Who benefits</div><div class="sb-cell-text">${esc(sb.who_benefits||'')}</div></div>
+      <div class="sb-cell"><div class="sb-cell-label">Who bears cost</div><div class="sb-cell-text">${esc(sb.who_bears_cost||'')}</div></div>
+      <div class="sb-cell"><div class="sb-cell-label">The case for</div><div class="sb-cell-text">${esc(sb.case_for||'')}</div></div>
+      <div class="sb-cell"><div class="sb-cell-label">The case against</div><div class="sb-cell-text">${esc(sb.case_against||'')}</div></div>
+    </div>`;
+  }
+
+  const catTag = (showCatTag && a.category) ? `<span class="doc-type-pill">${esc(a.category)}</span>` : '';
+
+  return `<div class="article-card">
+    <div class="card-inner">
+      <div class="urgency-stripe ${urg}"></div>
+      <div class="card-body">
+        <div class="card-meta-row">
+          <span class="source-pill"><a href="${esc(a.source_url||'#')}" target="_blank" rel="noopener">${esc((a.source_name||'').split('—')[0].trim())}</a></span>
+          ${a.doc_type ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
+          ${catTag}
+          ${pub}
+          ${score}
+          ${urg==='urgent' ? '<span class="urgency-badge urgent">🔴 Urgent</span>' : urg==='important' ? '<span class="urgency-badge important">🟡 Important</span>' : ''}
+        </div>
+        <div class="card-headline"><a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
+        ${a.summary ? `<p class="card-summary">${esc(a.summary)}</p>` : ''}
+        ${soWhatHtml}
+        ${nowWhatHtml}
+        ${sbHtml}
+        ${confHtml}
+        ${deadlineHtml}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildCompactCard(a, showCatTag) {
+  const urg  = a.urgency || 'routine';
+  const teaser = a.now_what || a.implication || '';
+  const pub = a.date_unknown ? ' · <span style="color:#B45309;font-size:10px">date unknown</span>' : (a.published ? ' · ' + new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '');
+
+  // detail section (shown when expanded)
+  const score = (a.importance_score != null) ? `<span class="importance-tag">${a.importance_score}</span>` : '';
+  const soWhatHtml = a.so_what ? `<div class="card-so-what" style="margin-top:8px"><strong>Analysis</strong>${esc(a.so_what)}</div>` : '';
+  const nowWhatHtml = a.now_what ? `<div class="card-now-what"><strong>→ Now what:</strong> ${esc(a.now_what)}</div>` : '';
+  const confHtml = a.confidence_note ? `<div class="confidence-note">${esc(a.confidence_note)}</div>` : '';
+  const deadlineHtml = a.comment_deadline ? `<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>` : '';
+
+  let sbHtml = '';
+  const sb = a.stakeholder_balance;
+  if (sb && typeof sb === 'object') {
+    sbHtml = `<button class="sb-toggle" onclick="toggleSB(event,this)" style="margin-top:6px">Stakeholder Analysis ▾</button>
+    <div class="sb-body">
+      <div class="sb-cell"><div class="sb-cell-label">Who benefits</div><div class="sb-cell-text">${esc(sb.who_benefits||'')}</div></div>
+      <div class="sb-cell"><div class="sb-cell-label">Who bears cost</div><div class="sb-cell-text">${esc(sb.who_bears_cost||'')}</div></div>
+      <div class="sb-cell"><div class="sb-cell-label">The case for</div><div class="sb-cell-text">${esc(sb.case_for||'')}</div></div>
+      <div class="sb-cell"><div class="sb-cell-label">The case against</div><div class="sb-cell-text">${esc(sb.case_against||'')}</div></div>
+    </div>`;
+  }
+
+  const summaryHtml = a.summary ? `<p class="card-summary" style="margin-top:6px;font-size:12px;color:#4A4A4A;line-height:1.65">${esc(a.summary)}</p>` : '';
+  const metaHtml = `<div class="card-meta-row" style="margin-bottom:6px;flex-wrap:wrap">
+    <span class="source-pill"><a href="${esc(a.source_url||'#')}" target="_blank" rel="noopener">${esc((a.source_name||'').split('—')[0].trim())}</a></span>
+    ${a.doc_type ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
+    ${score}
+    <span class="date-tag">${a.date_unknown ? '<span style="color:#B45309">date unknown</span>' : (a.published ? new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '')}</span>
+  </div>`;
+
+  return `<div class="compact-card" onclick="toggleCard(this)">
+    <div class="compact-inner">
+      <div class="urgency-stripe ${urg}" style="width:3px"></div>
+      <div class="compact-body">
+        <div class="compact-headline">
+          <a href="${esc(a.url||'#')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(a.headline||a.title)}</a>
+          ${pub}
+        </div>
+        ${teaser ? `<div class="compact-teaser">→ ${esc(teaser)}</div>` : ''}
+        ${urg==='urgent' ? '<span class="urgency-badge urgent" style="font-size:9px;margin-left:4px">Urgent</span>' : urg==='important' ? '<span class="urgency-badge important" style="font-size:9px;margin-left:4px">Important</span>' : ''}
+        <span class="compact-expand">▾</span>
+      </div>
+    </div>
+    <div class="compact-detail">
+      ${metaHtml}
+      ${summaryHtml}
+      ${soWhatHtml}
+      ${nowWhatHtml}
+      ${sbHtml}
+      ${confHtml}
+      ${deadlineHtml}
+    </div>
+  </div>`;
+}
+
+function buildRoutineCard(a) {
+  return `<div class="routine-card">
+    <div class="routine-inner">
+      <div class="urgency-stripe routine" style="width:3px"></div>
+      <div class="routine-body">
+        <div class="routine-headline">
+          <a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a>
+        </div>
+        <div class="routine-source">${esc((a.source_name||'').split('—')[0].trim())}${a.date_unknown ? ' · <span style="color:#B45309">date unknown</span>' : (a.published ? ' · ' + new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildMinimalCard(a) {
+  return `<div class="minimal-card">
+    <span>▸</span>
+    <a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a>
+    <span class="minimal-source">${esc((a.source_name||'').split('—')[0].trim())}</span>
+  </div>`;
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────
+function renderSidebar(data) {
+  const el = document.getElementById('sidebar-col');
+  if (!el) return;
+
+  const arts      = allArticles;
+  const urgent    = arts.filter(a => a.urgency === 'urgent').length;
+  const important = arts.filter(a => a.urgency === 'important').length;
+  const routine   = arts.filter(a => a.urgency === 'routine').length;
+  const discard   = arts.filter(a => a.urgency === 'discard').length;
+  const dateUnk   = arts.filter(a => a.date_unknown).length;
+  const comments  = arts.filter(a => a.is_comment_period && a.comment_deadline);
+
+  // Build category TOC
+  const catSet = [];
+  arts.forEach(a => { if (a.category && !catSet.includes(a.category)) catSet.push(a.category); });
+
+  let html = '';
+
+  // Stats
+  html += `<div class="sidebar-card">
+    <div class="sidebar-header"><div class="sidebar-title">This Issue</div></div>
+    <div class="sidebar-body">
+      <div class="stat-row"><span class="stat-label">Total articles</span><span class="stat-val">${arts.length}</span></div>
+      <div class="stat-row"><span class="stat-label">Priority</span><span class="stat-val urgent">${urgent}</span></div>
+      <div class="stat-row"><span class="stat-label">Important</span><span class="stat-val important">${important}</span></div>
+      <div class="stat-row"><span class="stat-label">Routine</span><span class="stat-val">${routine}</span></div>
+      ${discard > 0 ? `<div class="stat-row"><span class="stat-label">In drawer</span><span class="stat-val" style="color:#94A3B8">${discard}</span></div>` : ''}
+      ${dateUnk > 0 ? `<div class="stat-row"><span class="stat-label">Date unknown</span><span class="stat-val" style="color:#B45309">${dateUnk}</span></div>` : ''}
+      <div class="stat-row"><span class="stat-label">Week of</span><span class="stat-val">${esc(newsletterData.week_of)}</span></div>
+    </div>
+  </div>`;
+
+  // Comment periods
+  if (comments.length > 0) {
+    html += `<div class="sidebar-card">
+      <div class="sidebar-header"><div class="sidebar-title">📋 Comment Periods Open</div></div>
+      <div class="sidebar-body">
+        ${comments.slice(0, 6).map(a => `
+        <div class="comment-item">
+          <div class="comment-item-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
+          <div class="comment-item-date">Closes: ${esc(a.comment_deadline)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // In This Issue TOC — clicking a category filters the view to it (toggle to clear)
+  if (catSet.length > 0) {
+    const catCounts = {};
+    arts.forEach(a => { catCounts[a.category] = (catCounts[a.category] || 0) + 1; });
+    const clearRow = currentCategory
+      ? `<div class="toc-clear" onclick="clearCategory()">← Clear filter: showing only "${esc(currentCategory)}"</div>`
+      : '';
+    html += `<div class="sidebar-card">
+      <div class="sidebar-header"><div class="sidebar-title">In This Issue</div></div>
+      <div class="sidebar-body">
+        ${clearRow}
+        ${catSet.map((cat, i) => `
+        <div class="toc-item${cat === currentCategory ? ' active' : ''}" data-cat="${esc(cat)}" onclick="setCategory('${esc(cat).replace(/'/g, "\\'")}')">
+          <span class="toc-dot" style="background:${CAT_COLORS[i % CAT_COLORS.length]}"></span>
+          <span>${esc(cat)}</span>
+          <span class="toc-count">${catCounts[cat] || 0}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ── INTERACTION HANDLERS ───────────────────────────────────────────
+function toggleCard(el) {
+  el.classList.toggle('expanded');
+}
+
+function toggleDrawer(btn) {
+  const content = btn.nextElementSibling;
+  const isOpen  = content.classList.toggle('open');
+  const n = content.querySelectorAll('.minimal-card').length;
+  btn.textContent = isOpen
+    ? `Hide additional items ▲`
+    : `Show ${n} additional item${n !== 1 ? 's' : ''} ▾`;
+}
+
+function toggleSB(evt, btn) {
+  evt.stopPropagation();
+  const body = btn.nextElementSibling;
+  const open = body.classList.toggle('open');
+  btn.textContent = open ? 'Stakeholder Analysis ▲' : 'Stakeholder Analysis ▾';
+}
+
+function scrollToTier() {
+  const mainCol = document.getElementById('main-col');
+  if (mainCol) mainCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── UTILITY ───────────────────────────────────────────────────────
 function esc(s) {
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return (s || '').toString()
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 init();

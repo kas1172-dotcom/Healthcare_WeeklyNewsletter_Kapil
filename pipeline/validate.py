@@ -19,8 +19,17 @@ REQUIRED_NEWSLETTER_FIELDS = [
 REQUIRED_ARTICLE_FIELDS = [
     "title", "url", "published", "source_name", "source_url",
     "snippet", "doc_type", "comment_deadline", "source_type",
-    "category", "urgency", "headline", "summary", "implication", "is_comment_period"
+    "category", "urgency", "headline", "summary", "implication", "is_comment_period",
+    # Added in the analysis/classification rewrite — keep in sync with
+    # generate.py:validate_article_output()
+    "importance_score", "consulting_relevance", "policy_relevance",
+    "so_what", "now_what",
 ]
+
+# Fields that must be numbers in 0–100 (mirrors generate.py)
+SCORE_FIELDS = ["importance_score", "consulting_relevance", "policy_relevance"]
+
+VALID_URGENCY = {"urgent", "important", "routine", "discard"}
 
 URL_RE = re.compile(r"^https?://")
 
@@ -80,8 +89,12 @@ def validate_newsletter(path):
                     raise ValueError(f"{edition} article {idx} missing {field}")
             if not is_valid_url(article["url"]):
                 raise ValueError(f"{edition} article {idx} has invalid URL: {article['url']}")
-            if article["urgency"] not in {"urgent", "important", "routine"}:
+            if article["urgency"] not in VALID_URGENCY:
                 raise ValueError(f"{edition} article {idx} invalid urgency: {article['urgency']}")
+            for field in SCORE_FIELDS:
+                val = article[field]
+                if not isinstance(val, (int, float)) or isinstance(val, bool) or not (0 <= val <= 100):
+                    raise ValueError(f"{edition} article {idx} {field} must be a number 0–100, got {val!r}")
     print(f"✓ newsletter JSON valid: {data['consulting']['articles'].__len__()} consulting articles, {data['policy']['articles'].__len__()} policy articles")
 
 

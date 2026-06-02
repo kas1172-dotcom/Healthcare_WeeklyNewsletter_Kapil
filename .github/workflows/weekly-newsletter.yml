@@ -56,9 +56,10 @@ jobs:
       - name: Generate newsletter
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPO: ${{ github.repository }}
-        run: python pipeline/generate.py -i raw_articles.json -o newsletter_data.json
+        # --no-push: generate.py writes the files locally only. The commit step
+        # below is the single source of truth for publishing (newsletter + archive),
+        # so we don't race a Contents-API push against the git push.
+        run: python pipeline/generate.py -i raw_articles.json -o newsletter_data.json --no-push
 
       - name: Validate generated files
         run: python pipeline/validate.py --raw raw_articles.json --newsletter newsletter_data.json
@@ -71,7 +72,7 @@ jobs:
           BRANCH=${GITHUB_REF#refs/heads/}
           git fetch origin $BRANCH
           git pull --rebase origin $BRANCH || true
-          git add newsletter_data.json
+          git add newsletter_data.json newsletter_archive.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
