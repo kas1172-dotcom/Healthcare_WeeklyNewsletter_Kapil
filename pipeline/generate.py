@@ -51,6 +51,29 @@ MAX_ARTICLES_PER_EDITION = int(os.environ.get("MAX_ARTICLES_PER_EDITION", "150")
 # How many regulatory items may spill into the policy pool to round it out.
 POLICY_SPILLOVER_FROM_REG = 30
 
+# Classification throughput — tuned to stay under the API output-tokens-per-MINUTE
+# rate limit (default org tier is 10k/min). This is a weekly background job, so we
+# favor reliability over speed: run batches serially and pace them so sustained
+# output stays under the limit. ~8 articles/batch emits ~2–2.5k output tokens, so a
+# batch every ~16s ≈ 9–9.5k tokens/min — comfortably under 10k.
+# Raise the tier on the Anthropic console to go faster; lower the interval if so.
+CLASSIFY_BATCH        = int(os.environ.get("CLASSIFY_BATCH", "8"))
+CLASSIFY_MAX_TOKENS   = int(os.environ.get("CLASSIFY_MAX_TOKENS", "4000"))
+CLASSIFY_WORKERS      = int(os.environ.get("CLASSIFY_WORKERS", "1"))
+CLASSIFY_MIN_INTERVAL = float(os.environ.get("CLASSIFY_MIN_INTERVAL", "16"))  # seconds between API calls
+
+# Proactive pacing shared across (any) workers so we don't burn a retry on every
+# batch. The 429 backoff in process_batch is the safety net on top of this.
+_rate_lock = threading.Lock()
+_last_call_ts = [0.0]
+
+def _throttle():
+    with _rate_lock:
+        wait = CLASSIFY_MIN_INTERVAL - (time.monotonic() - _last_call_ts[0])
+        if wait > 0:
+            time.sleep(wait)
+        _last_call_ts[0] = time.monotonic()
+
 # ── CATEGORIES ────────────────────────────────────────────────────────────────
 CONSULTING_CATEGORIES = [
     "Compliance & Enforcement",
@@ -130,6 +153,70 @@ def _is_noise(a):
     ]).lower()
     return any(sig in text for sig in NOISE_SIGNALS)
 
+
+def _fallback_article(a, categories):
+    """Build a VALID article record for an item whose batch failed classification
+    (rate limit, parse error, etc.). All required string fields are non-empty so the
+    run still passes validation and publishes; the item is tiered as 'discard' with a
+    low score so the frontend tucks it into the collapsed drawer rather than the main
+    ranked view — visible and honest, but not pretending to be analyzed."""
+    title   = a.get("title") or "Untitled item"
+    snippet = a.get("snippet") or ""
+    return {
+        **a,
+        "category":             categories[-1],
+        "urgency":              "discard",
+        "importance_score":     5,
+        "consulting_relevance": 0,
+        "policy_relevance":     0,
+        "headline":             title,
+        "summary":              (snippet[:400] if snippet else title),
+        "so_what":              "Automated analysis was unavailable for this item this run (classification did not complete).",
+        "now_what":             "Review the linked source directly.",
+        "implication":          "Review the linked source directly.",
+        "stakeholder_balance":  None,
+        "confidence_note":      "Not analyzed this run — classification unavailable.",
+        "is_comment_period":    bool(a.get("comment_deadline")),
+    }
+
+
+def _ensure_article_fields(a, categories):
+    """Guarantee every field the validator requires is present and well-formed, so a
+    single item where the model omitted or malformed a field can't abort the whole
+    run at validation. Good values are left untouched; only missing/empty/invalid
+    ones are backfilled."""
+    out = dict(a)
+
+    def _str_ok(v):
+        return isinstance(v, str) and v.strip()
+
+    title = out.get("title") or out.get("headline") or "Untitled item"
+
+    if not _str_ok(out.get("category")):
+        out["category"] = categories[-1]
+    if out.get("urgency") not in ("urgent", "important", "routine", "discard"):
+        out["urgency"] = "routine"
+
+    out["headline"] = out["headline"] if _str_ok(out.get("headline")) else title
+    out["summary"]  = out["summary"]  if _str_ok(out.get("summary"))  else (out.get("snippet") or title)
+    out["so_what"]  = out["so_what"]  if _str_ok(out.get("so_what"))  else "Analysis not provided for this item."
+    out["now_what"] = out["now_what"] if _str_ok(out.get("now_what")) else "Review the linked source directly."
+    out["implication"] = out["implication"] if _str_ok(out.get("implication")) else out["now_what"]
+
+    for f in ("importance_score", "consulting_relevance", "policy_relevance"):
+        v = out.get(f)
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not (0 <= v <= 100):
+            out[f] = 30
+
+    if not isinstance(out.get("is_comment_period"), bool):
+        out["is_comment_period"] = bool(out.get("comment_deadline"))
+
+    if not isinstance(out.get("stakeholder_balance"), dict):
+        out["stakeholder_balance"] = None
+    out.setdefault("confidence_note", None)
+
+    return out
+
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 def parse_json_response(raw_text):
     text = (raw_text or "").strip()
@@ -144,6 +231,17 @@ def parse_json_response(raw_text):
                 part = part.split("\n", 1)[1] if "\n" in part else ""
             cleaned.append(part)
         text = "\n".join(cleaned).strip() or text
+
+    # Decode the FIRST complete JSON value and ignore any trailing prose the model
+    # may append (raw_decode stops at the end of the first value), which is what
+    # caused intermittent "Extra data" failures.
+    start = next((i for i, ch in enumerate(text) if ch in "[{"), None)
+    if start is not None:
+        try:
+            obj, _ = json.JSONDecoder().raw_decode(text[start:])
+            return obj
+        except json.JSONDecodeError:
+            pass
 
     match = re.search(r"(\[.*\]|\{.*\})", text, re.S)
     if match:
@@ -359,7 +457,7 @@ def parse_args():
 
 # ── CLASSIFICATION ────────────────────────────────────────────────────────────
 def classify_articles(client, articles, categories, audience_label, audience_desc, edition="consulting"):
-    BATCH = 15
+    BATCH = CLASSIFY_BATCH
     total = len(articles)
     print(f"\n  Classifying {total} articles for {audience_label} audience...")
 
@@ -515,11 +613,14 @@ Reserve null for items where the facts clearly determine the analysis.{stakehold
             f"SNIPPET: {a['snippet'][:300]}"
             for j, a in enumerate(batch)
         )
-        for attempt in range(2):
+        MAX_ATTEMPTS = 4
+        last_err = None
+        for attempt in range(MAX_ATTEMPTS):
             try:
+                _throttle()
                 resp = client.messages.create(
                     model=CLASSIFY_MODEL,
-                    max_tokens=6000,   # new fields (so_what, now_what, stakeholder_balance) add ~150 tok/article
+                    max_tokens=CLASSIFY_MAX_TOKENS,
                     system=[{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
                     messages=[{"role": "user", "content": batch_text}],
                 )
@@ -536,23 +637,20 @@ Reserve null for items where the facts clearly determine the analysis.{stakehold
                 print(f"    ✓ Batch {batch_idx+1}/{n_batches} — {len(classified)} classified")
                 return batch_idx, classified
             except Exception as e:
-                if attempt == 0:
-                    print(f"    ✗ Batch {batch_idx+1} retry: {e}")
-                    time.sleep(1)
-                else:
-                    print(f"    ✗ Batch {batch_idx+1} failed: {e}")
-                    return batch_idx, [{
-                        **a,
-                        "category": categories[-1], "urgency": "routine",
-                        "importance_score": 30, "consulting_relevance": 50, "policy_relevance": 50,
-                        "headline": a["title"], "summary": a["snippet"],
-                        "so_what": "", "now_what": "", "implication": "",
-                        "stakeholder_balance": None, "confidence_note": None,
-                        "is_comment_period": bool(a.get("comment_deadline")),
-                    } for a in batch]
-        return batch_idx, []
+                last_err = e
+                is_rate = "429" in str(e) or "rate_limit" in str(e).lower()
+                if attempt < MAX_ATTEMPTS - 1:
+                    # Rate-limit errors need a real cooldown (limit is per-minute);
+                    # other errors get a short backoff.
+                    wait = (25 if is_rate else 3) * (attempt + 1)
+                    label = "rate-limited" if is_rate else "error"
+                    print(f"    ⏳ Batch {batch_idx+1} {label}; retry {attempt+1}/{MAX_ATTEMPTS-1} in {wait}s")
+                    time.sleep(wait)
+        # All attempts failed — emit VALID fallback records so the run still publishes.
+        print(f"    ✗ Batch {batch_idx+1} failed after {MAX_ATTEMPTS} attempts: {last_err}")
+        return batch_idx, [_fallback_article(a, categories) for a in batch]
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=CLASSIFY_WORKERS) as executor:
         futures = {executor.submit(process_batch, i, b): i for i, b in enumerate(batches)}
         for future in as_completed(futures):
             idx, items = future.result()
@@ -756,8 +854,12 @@ def main():
     urgency_key = lambda a: {"urgent": 0, "important": 1, "routine": 2, "discard": 3}.get(
         a.get("urgency", "routine"), 2
     )
-    consulting_articles = sorted([a for a in consulting_raw if not _is_noise(a)], key=urgency_key)
-    policy_articles     = sorted([a for a in policy_raw     if not _is_noise(a)], key=urgency_key)
+    consulting_articles = sorted(
+        [_ensure_article_fields(a, CONSULTING_CATEGORIES) for a in consulting_raw if not _is_noise(a)],
+        key=urgency_key)
+    policy_articles = sorted(
+        [_ensure_article_fields(a, POLICY_CATEGORIES) for a in policy_raw if not _is_noise(a)],
+        key=urgency_key)
 
     print(f"\n  After filter: {len(consulting_articles)} consulting, {len(policy_articles)} policy articles")
 
@@ -814,8 +916,10 @@ def main():
     else:
         print("  ✓ Policy what's new: first run — no prior run to compare")
 
-    save_archive(archive, ARCHIVE_FILE)
-
+    # Validate BEFORE persisting the archive. The run was appended to the archive
+    # in memory (so compute_whats_new could diff correctly), but if validation fails
+    # we exit without writing it — a non-published run must not pollute the archive's
+    # "what's new" baseline.
     try:
         validate_newsletter_data(output)
     except ValueError as exc:
@@ -823,6 +927,7 @@ def main():
         sys.exit(1)
 
     print("\n[4/4] Publishing...")
+    save_archive(archive, ARCHIVE_FILE)
     save_json(output, args.output)
     push_to_github(output, github_token, github_repo, args.output, args.no_push)
     # Also push archive (it's small enough; keeps GitHub Pages host in sync)
