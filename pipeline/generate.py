@@ -601,7 +601,18 @@ Accept:
 
 confidence_note: use it liberally. 'Prospects unclear given committee dynamics' and
 'Insufficient information to assess enforcement trajectory' are professional, honest answers.
-Reserve null for items where the facts clearly determine the analysis.{stakeholder_guidance}"""
+Reserve null for items where the facts clearly determine the analysis.{stakeholder_guidance}
+
+-----
+Deduplication
+
+If article topics appear to be duplicates, consolidste them into a single record with the most 
+informative headline and summary, and the highest relevance/reasoning scores. The model should 
+be able to recognize duplicates and assign them the same category/urgency, but if it doesn't, 
+this is a post-processing step to ensure the final output is clean and non-redundant.
+
+
+"""
 
     results_map = {}
 

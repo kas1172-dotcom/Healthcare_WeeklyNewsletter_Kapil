@@ -52,8 +52,8 @@ section{position:relative;z-index:2}
 .sec-intro{font-size:17px;color:var(--ink-soft);max-width:60ch;margin-bottom:48px}
 
 /* PIPELINE */
-.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
-@media(max-width:820px){.pipeline{grid-template-columns:1fr 1fr}}
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+@media(max-width:1020px){.pipeline{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.pipeline{grid-template-columns:1fr}}
 .stage{padding:32px 26px;border-right:1px solid var(--line);position:relative;transition:background .3s}
 .stage:last-child{border-right:none}
@@ -144,20 +144,20 @@ footer{border-top:1px solid var(--line);padding:36px 32px;text-align:center}
 
 <section id="pipeline" class="sec">
   <div class="sec-label reveal">The Pipeline</div>
-  <h2 class="sec-title reveal">Four stages, fully automated</h2>
+  <h2 class="sec-title reveal">Five stages, fully automated</h2>
   <p class="sec-intro reveal">Every Monday morning a scheduled job runs the full pipeline on cloud infrastructure — no server to maintain, no button to press.</p>
   <div class="pipeline">
     <div class="stage reveal">
       <div class="stage-num">01</div>
       <div class="stage-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
       <h3>Ingest</h3>
-      <p>Pulls from federal APIs (Federal Register, Congress.gov, openFDA), agency enforcement pages, and 20+ RSS feeds across regulatory, legal, and trade press.</p>
+      <p>Pulls from federal APIs (Federal Register, Congress.gov, openFDA), agency enforcement pages, and 20+ RSS feeds across regulatory, legal, and trade press. Each article is stamped with its real publication date — items with unresolvable dates are flagged rather than faked.</p>
     </div>
     <div class="stage reveal">
       <div class="stage-num">02</div>
       <div class="stage-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></div>
       <h3>Classify</h3>
-      <p>Each item is tagged with a category, urgency level, and audience-specific analysis — turning raw notices into a structured, prioritized brief.</p>
+      <p>Each item is tagged with a category, urgency tier, a 0–100 importance score, audience-specific relevance, and a "so what / now what" analysis. Policy items also get a multi-stakeholder read — who benefits, who bears the cost, and what each side argues.</p>
     </div>
     <div class="stage reveal">
       <div class="stage-num">03</div>
@@ -167,6 +167,12 @@ footer{border-top:1px solid var(--line);padding:36px 32px;text-align:center}
     </div>
     <div class="stage reveal">
       <div class="stage-num">04</div>
+      <div class="stage-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zM3 10h18M3 14h12M3 18h8"/></svg></div>
+      <h3>Archive &amp; Diff</h3>
+      <p>Appends the run to a rolling 26-week archive (~6 months of history), then computes a "what's new since last run" digest for each edition — so returning readers can catch up in seconds without re-reading the full brief.</p>
+    </div>
+    <div class="stage reveal">
+      <div class="stage-num">05</div>
       <div class="stage-icon"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
       <h3>Publish</h3>
       <p>Commits the result to the repository; the static site picks it up instantly. Readers filter by date range, sort by importance, and drill into any category.</p>
@@ -180,34 +186,33 @@ footer{border-top:1px solid var(--line);padding:36px 32px;text-align:center}
   <p class="sec-intro reveal">Every item links back to the official record — the Federal Register entry, the OIG enforcement action, the committee bill. No second-hand summaries in the citation chain.</p>
   <div class="src-groups">
     <div class="src-card reveal">
-      <div class="src-card-head"><span class="src-dot" style="background:var(--teal)"></span><h4>Federal & Regulatory</h4></div>
+      <div class="src-card-head"><span class="src-dot" style="background:var(--teal)"></span><h4>Federal &amp; Regulatory</h4></div>
       <ul class="src-list">
         <li>Federal Register (CMS, FDA, DEA, OCR, ONC, SAMHSA, HRSA)</li>
-        <li>HHS Office of Inspector General — enforcement & reports</li>
-        <li>openFDA — device clearances & drug recalls</li>
-        <li>FTC & DOJ healthcare actions</li>
-        <li>CMS Newsroom</li>
+        <li>HHS Office of Inspector General — enforcement &amp; reports</li>
+        <li>openFDA — device clearances &amp; drug approvals</li>
+        <li>CMS Newsroom &amp; Innovation Center</li>
+        <li>HHS news</li>
       </ul>
     </div>
     <div class="src-card reveal">
-      <div class="src-card-head"><span class="src-dot" style="background:var(--coral)"></span><h4>Legislative & Legal</h4></div>
+      <div class="src-card-head"><span class="src-dot" style="background:var(--coral)"></span><h4>Legislative &amp; Legal</h4></div>
       <ul class="src-list">
         <li>Congress.gov — bills, committee activity, summaries</li>
-        <li>Senate HELP · Finance committees</li>
-        <li>House Energy &amp; Commerce · Ways &amp; Means</li>
         <li>Congressional Research Service reports</li>
-        <li>Federal court opinions (CourtListener)</li>
         <li>GAO &amp; CBO publications</li>
+        <li>PACER federal court cases</li>
+        <li>Bloomberg Law Health · The Capitol Forum · Politico Pulse</li>
       </ul>
     </div>
     <div class="src-card reveal">
       <div class="src-card-head"><span class="src-dot" style="background:var(--gold)"></span><h4>Industry &amp; Research</h4></div>
       <ul class="src-list">
-        <li>STAT News</li>
-        <li>Becker's Hospital Review &amp; Payer</li>
-        <li>Healthcare Dive</li>
-        <li>Health policy think tanks &amp; journals</li>
-        <li>Healthcare Finance · MedCity News</li>
+        <li>STAT News · Kaiser Health News</li>
+        <li>Becker's Hospital Review</li>
+        <li>Healthcare Dive · Health Affairs</li>
+        <li>Modern Healthcare · American Hospital Association</li>
+        <li>AHIP · HFMA · MGMA</li>
       </ul>
     </div>
   </div>
@@ -238,12 +243,12 @@ footer{border-top:1px solid var(--line);padding:36px 32px;text-align:center}
   <h2 class="sec-title reveal">Built to run itself</h2>
   <p class="sec-intro reveal">A deliberately lightweight stack — no database, no server, no recurring cost beyond API usage. The entire system is a few Python scripts, a static page, and a scheduled job.</p>
   <div class="stack">
-    <div class="stack-item reveal"><div><div class="st-name">Python</div><div class="st-role">ingestion & orchestration</div></div></div>
-    <div class="stack-item reveal"><div><div class="st-name">NLP API</div><div class="st-role">classification & synthesis</div></div></div>
+    <div class="stack-item reveal"><div><div class="st-name">Python</div><div class="st-role">ingestion &amp; orchestration</div></div></div>
+    <div class="stack-item reveal"><div><div class="st-name">Anthropic Claude</div><div class="st-role">classification &amp; synthesis</div></div></div>
     <div class="stack-item reveal"><div><div class="st-name">GitHub Actions</div><div class="st-role">weekly scheduler</div></div></div>
     <div class="stack-item reveal"><div><div class="st-name">GitHub Pages</div><div class="st-role">static hosting</div></div></div>
     <div class="stack-item reveal"><div><div class="st-name">Vanilla JS</div><div class="st-role">client-side filtering</div></div></div>
-    <div class="stack-item reveal"><div><div class="st-name">JSON</div><div class="st-role">data layer</div></div></div>
+    <div class="stack-item reveal"><div><div class="st-name">JSON</div><div class="st-role">rolling archive &amp; data layer</div></div></div>
   </div>
 </section>
 
