@@ -215,6 +215,15 @@ def _ensure_article_fields(a, categories):
         out["stakeholder_balance"] = None
     out.setdefault("confidence_note", None)
 
+    if not _str_ok(out.get("regulatory_stage")):
+        out["regulatory_stage"] = "Administrative Action"
+    if not isinstance(out.get("client_types"), list) or not out["client_types"]:
+        out["client_types"] = []
+    if "effective_date" not in out:
+        out["effective_date"] = None
+    if not _str_ok(out.get("watch_for")):
+        out["watch_for"] = None
+
     return out
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -490,6 +499,34 @@ Rules:
         stakeholder_schema = '  "stakeholder_balance": null,'
         stakeholder_guidance = ""
 
+    if edition == "consulting":
+        so_what_desc = (
+            "1 sentence, ≤25 words: name the specific client type affected "
+            "(provider, payer, pharma, etc.), the concrete exposure (revenue/compliance/ops), "
+            "and one non-obvious second-order consequence"
+        )
+        now_what_desc = (
+            f"1 sentence: exact recommendation — advise [specific client type] to [concrete action] "
+            f"within [30/60/90-day timeframe]"
+        )
+        watch_for_desc = (
+            "1 sentence: the specific next event in this regulatory sequence — "
+            "what rule/decision/deadline follows this one, when it's expected, and what it will signal"
+        )
+    else:
+        so_what_desc = (
+            "1–2 sentences: non-obvious policy consequence — the broader legislative or regulatory "
+            "trend this fits, and the second-order effect on coverage, access, or spending"
+        )
+        now_what_desc = (
+            f"1 sentence: what {audience_label}s should monitor or act on — name the specific "
+            f"vote, comment window, stakeholder coalition, or policy vehicle"
+        )
+        watch_for_desc = (
+            "1 sentence: the specific next legislative or regulatory development to monitor — "
+            "floor vote, implementation deadline, state action, or stakeholder response expected next"
+        )
+
     # Static system prompt — cached across all batches for this edition run.
     system_text = f"""You are a senior healthcare analyst producing structured intelligence for {audience_desc}.
 
@@ -513,12 +550,15 @@ Return ONLY a valid JSON array — no markdown, no preamble:
   "policy_relevance": <integer 0–100, relevance to policy professionals and legislative staff>,
   "headline": "<rewritten headline, analyst voice, 10–15 words, specific — name the agency/rule/dollar amount>",
   "summary": "<2–3 sentences: what happened, what rule/law/action is involved, what changed from prior state>",
-  "so_what": "<1–2 sentences: non-obvious analysis — connect to a broader trend or agency priority pattern, name second-order consequences for providers/payers/patients/legislation>",
-  "now_what": "<1 sentence: concrete action or monitoring item — what should {audience_label}s DO or WATCH FOR in the next 30–90 days>",
-  "implication": "<same content as now_what — field kept for compatibility>",
+  "so_what": "<{so_what_desc}>",
+  "now_what": "<{now_what_desc}>",
 {stakeholder_schema}
   "confidence_note": "<calibrated hedge if uncertain — e.g. 'Enforcement trajectory unclear pending court ruling' or 'Comment period outcome uncertain given split committee' — use null when the analysis is high-confidence>",
-  "is_comment_period": <true if a proposed rule is currently open for public comment, else false>
+  "is_comment_period": <true if a proposed rule is currently open for public comment, else false>,
+  "regulatory_stage": "<one of: NPRM | Final Rule | Interim Final Rule | Guidance | Enforcement Action | Court Ruling | Legislation | Advisory Opinion | Administrative Action | Recall | Drug/Device Approval>",
+  "effective_date": "<YYYY-MM-DD if specified in the document, 'TBD' if announced but unconfirmed, null if not applicable>",
+  "client_types": ["<subset of: Hospital/Health System, Managed Care/Payer, Physician/Group Practice, Life Sciences/Pharma, Medical Device, Post-Acute/LTC, Behavioral Health, Digital Health, All Providers>"],
+  "watch_for": "<{watch_for_desc}>"
 }}]
 
 ━━━ IMPORTANCE SCORE RUBRIC (0–100) ━━━
@@ -557,35 +597,14 @@ Score the INTERSECTION of magnitude × breadth-of-impact, not just headline size
           • Highly procedural notices with zero practical healthcare impact
           • Purely local scope with no national precedent
 
-━━━ WORKED EXAMPLES ━━━
+━━━ CALIBRATION ANCHOR ━━━
 
-Example A — importance_score: 88, urgency: "urgent"
-  Title: "CMS releases final 2025 IPPS rule; hospitals receive 2.9% base rate update"
-  Reasoning: Final rule, direct dollar impact on every inpatient hospital in Medicare,
-  effective Oct 1. Consulting_relevance: 92 (affects all hospital clients' planning),
-  policy_relevance: 78 (payment policy with legislative implications).
-  so_what: "The 2.9% update trails estimated market basket inflation by ~0.4pp after
-  productivity adjustment — continuing a multi-year pattern of real-terms cuts to
-  hospital operating margins that is accelerating consolidation among independent hospitals."
-  confidence_note: null
+High bar (score 88, urgency "urgent"): CMS final 2025 IPPS rule — 2.9% base rate update, effective Oct 1.
+  so_what: "2.9% trails market basket by ~0.4pp after productivity adjustment — continuing real-terms cuts that are accelerating consolidation among independent hospitals."
+  now_what: "Model updated reimbursement rates for hospital clients before Oct 1 budget cycle; flag margin compression in Q3 board materials."
 
-Example B — importance_score: 62, urgency: "important"
-  Title: "OIG issues advisory opinion on specialty pharmacy co-pay copayment assistance arrangements"
-  Reasoning: Compliance guidance with enforcement implications for specialty pharmacy
-  clients, but narrow applicability (specific arrangement structure). Consulting_relevance: 78,
-  policy_relevance: 38.
-  so_what: "This is the OIG's third advisory opinion in 18 months scrutinizing copay
-  assistance structures — signaling that the office views this area as a priority
-  enforcement target regardless of the specific vehicle used."
-  confidence_note: "Advisory opinions bind only the requesting party; enforcement risk
-  for similar but not identical arrangements remains uncertain."
-
-Example C — importance_score: 18, urgency: "routine"
-  Title: "FDA clears 510(k) for standard blood pressure monitor — Model BPX-200"
-  Reasoning: Routine clearance of a commodity device. No new technology, no coverage
-  implication, no enforcement angle. Consulting_relevance: 12, policy_relevance: 8.
-  so_what: "Standard iterative device clearance; no policy or reimbursement implications."
-  confidence_note: null
+Low bar (score 18, urgency "routine"): Routine 510(k) clearance of a commodity blood pressure monitor.
+  so_what: "Standard iterative clearance; no coverage or reimbursement change." now_what: "No action required."
 
 ━━━ QUALITY STANDARDS ━━━
 
@@ -603,15 +622,28 @@ confidence_note: use it liberally. 'Prospects unclear given committee dynamics' 
 'Insufficient information to assess enforcement trajectory' are professional, honest answers.
 Reserve null for items where the facts clearly determine the analysis.{stakeholder_guidance}
 
------
-Deduplication
+━━━ FIELD DEFINITIONS ━━━
 
-If article topics appear to be duplicates, consolidate them into a single record with the most
-informative headline and summary, and the highest relevance/reasoning scores. The model should
-be able to recognize duplicates and assign them the same category/urgency, but if it doesn't,
-this is a post-processing step to ensure the final output is clean and non-redundant.
+regulatory_stage — pick the most precise label:
+  NPRM = proposed rule open for comment
+  Final Rule = published, binding rule
+  Interim Final Rule = binding immediately, comment period open
+  Guidance = sub-regulatory policy (FAQ, Dear Colleague, CMS memo)
+  Enforcement Action = OIG/DOJ/FTC action, settlement, CIA
+  Court Ruling = judicial decision affecting healthcare regulation
+  Legislation = enacted law or active bill
+  Advisory Opinion = OIG/FTC advisory, binding only to requester
+  Recall = FDA product recall
+  Drug/Device Approval = FDA approval, clearance, or authorization
+  Administrative Action = everything else (committee meeting, PRA notice, personnel)
 
+client_types — include ALL that are materially affected. Use exact strings from the list.
+  If broadly applicable, use ["All Providers"] as one entry but still include more specific types.
 
+effective_date — the date the rule/action TAKES EFFECT, not publication date.
+  Most NPRMs: null (no effective date yet). Final Rules: check the document, usually 30-60 days after publication.
+
+If two articles in this batch cover the exact same event (same rule, same enforcement action, same approval), emit only the higher-quality record. Use its idx, the more specific headline, and the higher scores. Omit the duplicate from your output entirely.
 """
 
     results_map = {}
@@ -672,6 +704,52 @@ this is a post-processing step to ensure the final output is clean and non-redun
         results.extend(results_map.get(i, []))
     return results
 
+def group_articles_by_topic(client, articles):
+    """One extra API call per edition: stamps each article with topic_group (or None)."""
+    candidates = [(i, a) for i, a in enumerate(articles)
+                  if (a.get("urgency") or "routine") != "discard"]
+    if len(candidates) < 2:
+        for a in articles:
+            a.setdefault("topic_group", None)
+        return articles
+
+    headline_list = "\n".join(
+        f"[{orig_i}] {a.get('headline') or a.get('title', '')}"
+        for orig_i, a in candidates
+    )
+
+    prompt = (
+        "Group these healthcare news article headlines by shared underlying topic or story.\n\n"
+        "Rules:\n"
+        "- Assign a group name ONLY when 2+ articles cover the same story, rulemaking, drug, "
+        "enforcement action, legislation, or event.\n"
+        "- Group names: 3-7 words, title case "
+        "(e.g. \"Medicaid Work Requirements Rule\", \"GLP-1 Coverage Policy\", \"CMS Prior Authorization Rule\").\n"
+        "- Articles with no partner: topic_group = null.\n\n"
+        "Return ONLY a JSON array, one object per article in input order:\n"
+        "[{\"idx\": <number>, \"topic_group\": \"<name or null>\"}, ...]\n\n"
+        f"Headlines:\n{headline_list}"
+    )
+
+    try:
+        _throttle()
+        resp = client.messages.create(
+            model=CLASSIFY_MODEL,
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        parsed = parse_json_response(resp.content[0].text.strip())
+        groups = {item["idx"]: item.get("topic_group") or None for item in parsed if "idx" in item}
+        for orig_i, a in candidates:
+            a["topic_group"] = groups.get(orig_i)
+    except Exception as e:
+        print(f"  ⚠ Topic grouping failed ({e}) — skipping")
+
+    for a in articles:
+        a.setdefault("topic_group", None)
+    return articles
+
+
 def generate_category_notes(client, articles, edition, categories):
     """Single API call — generates a 2-sentence summary for every active category."""
     cat_groups = {}
@@ -702,6 +780,7 @@ def generate_category_notes(client, articles, edition, categories):
     )
 
     try:
+        _throttle()
         resp = client.messages.create(
             model=CLASSIFY_MODEL,
             max_tokens=2000,
@@ -736,13 +815,19 @@ Return a JSON object — no markdown:
 {{
   "subject_line": "<compelling email subject line specific to this week, under 65 chars>",
   "theme_of_week": "<6-9 word theme capturing the dominant storyline this week>",
-  "editors_note": "<4-5 sentences synthesizing the week — what the dominant theme is, what tensions exist, what readers should watch. Analyst voice. No 'this week we cover' phrasing.>"
+  "editors_note": "<3-4 sentences synthesizing the week's dominant theme and key tensions. Analyst voice. No 'this week we cover' phrasing.>",
+  "what_to_watch": [
+    "<forward-looking question or signal #1 — specific, tied to an actual item from this week's briefing, 1 sentence>",
+    "<forward-looking question or signal #2>",
+    "<forward-looking question or signal #3>",
+    "<forward-looking question or signal #4>"
+  ]
 }}"""
 
     try:
         response = client.messages.create(
             model=EDITORIAL_MODEL,
-            max_tokens=700,
+            max_tokens=900,
             messages=[{"role": "user", "content": prompt}]
         )
         text = response.content[0].text.strip()
@@ -753,9 +838,10 @@ Return a JSON object — no markdown:
     except Exception as e:
         print(f"    ✗ Editorial error: {e}")
         return {
-            "subject_line":  f"Healthcare Regulatory & Policy Monitor — {edition.title()} — {week_of}",
-            "theme_of_week": "Healthcare regulatory developments",
-            "editors_note":  "This week's briefing covers the latest regulatory and policy developments.",
+            "subject_line":   f"Healthcare Regulatory & Policy Monitor — {edition.title()} — {week_of}",
+            "theme_of_week":  "Healthcare regulatory developments",
+            "editors_note":   "This week's briefing covers the latest regulatory and policy developments.",
+            "what_to_watch":  [],
         }
 
 # ── GITHUB PUSH ───────────────────────────────────────────────────────────────
@@ -873,6 +959,10 @@ def main():
         key=urgency_key)
 
     print(f"\n  After filter: {len(consulting_articles)} consulting, {len(policy_articles)} policy articles")
+
+    print("\n[1.5/4] Grouping articles by topic...")
+    consulting_articles = group_articles_by_topic(client, consulting_articles)
+    policy_articles     = group_articles_by_topic(client, policy_articles)
 
     print("\n[2/4] Generating category notes...")
     consulting_notes = generate_category_notes(client, consulting_articles, "consulting", CONSULTING_CATEGORIES)

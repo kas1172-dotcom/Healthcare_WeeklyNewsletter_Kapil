@@ -141,6 +141,66 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 .card-so-what strong{font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#2563EB;display:block;margin-bottom:2px}
 .card-now-what{font-size:11px;color:#0F766E;background:rgba(13,148,136,.06);border-left:3px solid #0D9488;padding:5px 10px;border-radius:0 4px 4px 0;line-height:1.5;margin-bottom:6px}
 .card-now-what strong{font-weight:600}
+.card-impact{font-size:12px;color:#1A1A1A;line-height:1.6;margin-bottom:4px}
+.card-action{font-size:11.5px;color:#0F766E;line-height:1.5;margin-bottom:5px;display:flex;align-items:flex-start;gap:4px}
+.card-action-label{font-weight:700;flex-shrink:0;color:#0D9488}
+.card-details{margin-top:6px}
+.card-details>summary{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#9C9A94;cursor:pointer;list-style:none;padding:2px 0}
+.card-details>summary::before{content:"▸ "}
+.card-details[open]>summary::before{content:"▾ "}
+.card-details>summary:hover{color:#5C5A54}
+.card-summary-detail{font-size:11px;color:#5C5A54;line-height:1.65;margin-top:5px}
+
+/* ── REGULATORY STAGE BADGE ──────────────────────────────────────── */
+.reg-stage{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.reg-stage.nprm{background:#FEF3C7;color:#92400E}
+.reg-stage.final-rule{background:#D1FAE5;color:#065F46}
+.reg-stage.interim-final{background:#CCFBF1;color:#0F766E}
+.reg-stage.guidance{background:#E0F2FE;color:#0369A1}
+.reg-stage.enforcement{background:#FEE2E2;color:#991B1B}
+.reg-stage.court-ruling{background:#EDE9FE;color:#5B21B6}
+.reg-stage.legislation{background:#DBEAFE;color:#1E3A8A}
+.reg-stage.advisory{background:#F3F4F6;color:#374151}
+.reg-stage.recall{background:#FEE2E2;color:#991B1B}
+.reg-stage.approval{background:#D1FAE5;color:#065F46}
+.reg-stage.admin{background:#F3F4F6;color:#6B7280}
+
+/* ── CLIENT TYPE CHIPS ────────────────────────────────────────────── */
+.client-types{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;margin-bottom:3px}
+.client-chip{font-size:9px;font-weight:600;padding:1px 6px;border-radius:100px;background:#F0F9FF;color:#0369A1;border:1px solid #BAE6FD;white-space:nowrap}
+.client-chip.active-filter{background:#0369A1;color:#fff}
+
+/* ── EFFECTIVE DATE ───────────────────────────────────────────────── */
+.effective-date-tag{font-size:10px;color:#7C3AED;background:#F5F3FF;border:1px solid #DDD6FE;padding:1px 6px;border-radius:3px;font-weight:600}
+.effective-date-tag::before{content:"⚡ eff. "}
+
+/* ── WATCH FOR (per-article) ──────────────────────────────────────── */
+.card-watch-for{font-size:11px;color:#6D28D9;line-height:1.5;margin-top:4px;margin-bottom:4px;padding-left:2px}
+.card-watch-for::before{content:"⟳ Watch: ";font-weight:700;color:#7C3AED}
+
+/* ── WHAT TO WATCH PANEL ──────────────────────────────────────────── */
+.wtw-panel{background:#0C1A2E;border-bottom:1px solid #1E3A5F;padding:14px 0}
+.wtw-inner{max-width:1100px;margin:0 auto;padding:0 24px}
+.wtw-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;user-select:none}
+.wtw-icon{font-size:13px}
+.wtw-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#93C5FD}
+.wtw-edition{font-size:10px;color:rgba(147,197,253,.5);margin-left:4px}
+.wtw-chevron{margin-left:auto;font-size:11px;color:#64748B;transition:transform .2s}
+.wtw-chevron.open{transform:rotate(180deg)}
+.wtw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}
+.wtw-item{background:rgba(255,255,255,.04);border:1px solid rgba(147,197,253,.12);border-radius:6px;padding:8px 12px;font-size:12px;color:rgba(255,255,255,.75);line-height:1.5;display:flex;gap:8px;align-items:flex-start}
+.wtw-bullet{color:#3B82F6;font-weight:700;flex-shrink:0;margin-top:1px}
+.wtw-body{display:none}
+.wtw-body.open{display:block}
+
+/* ── CLIENT FILTER BAR ────────────────────────────────────────────── */
+.client-filter-row{background:#F8FAFC;border-bottom:1px solid #E2E8F0;padding:6px 24px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;overflow-x:auto}
+.client-filter-row.hidden{display:none}
+.client-filter-label{font-size:10px;font-weight:600;color:#64748B;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.client-filter-btn{height:22px;padding:0 9px;border:1px solid #E2E8F0;border-radius:100px;font-size:10px;font-weight:600;cursor:pointer;background:#fff;color:#64748B;transition:all .12s;white-space:nowrap}
+.client-filter-btn:hover{border-color:#0369A1;color:#0369A1}
+.client-filter-btn.active{background:#0369A1;border-color:#0369A1;color:#fff}
+
 .comment-deadline{font-size:10px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:4px;padding:3px 7px;margin-top:4px;display:inline-flex;align-items:center;gap:4px}
 .confidence-note{font-size:11px;color:#64748B;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:4px;padding:5px 9px;margin-top:6px;line-height:1.5;font-style:italic}
 .confidence-note::before{content:"⚖ ";font-style:normal}
@@ -215,6 +275,21 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 .toc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .toc-count{margin-left:auto;font-size:10px;color:#9C9A94;font-weight:600}
 
+/* ── TOPIC GROUP ──────────────────────────────────────────────────── */
+.topic-group{border:1px solid #DDE8E4;border-radius:8px;margin-bottom:10px;overflow:hidden;background:#F7FAFA}
+.topic-group-header{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;background:#EEF6F4;border-bottom:1px solid #DDE8E4;user-select:none;transition:background .12s}
+.topic-group-header:hover{background:#E4F0EE}
+.topic-group-stripe{width:4px;height:18px;border-radius:2px;flex-shrink:0}
+.topic-group-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0F766E;flex-shrink:0}
+.topic-group-name{font-size:12px;font-weight:600;color:#0C2D26;flex:1;min-width:0}
+.topic-group-count{font-size:10px;color:#6B9E98;background:rgba(13,148,136,.1);padding:1px 7px;border-radius:100px;font-weight:600;flex-shrink:0}
+.topic-group-chevron{font-size:11px;color:#6B9E98;flex-shrink:0;transition:transform .2s}
+.topic-group.collapsed .topic-group-chevron{transform:rotate(-90deg)}
+.topic-group-body{padding:8px}
+.topic-group-body .article-card,.topic-group-body .compact-card,.topic-group-body .routine-card{margin-bottom:6px}
+.topic-group-body .article-card:last-child,.topic-group-body .compact-card:last-child,.topic-group-body .routine-card:last-child{margin-bottom:0}
+.topic-group.collapsed .topic-group-body{display:none}
+
 /* ── PRIORITY BANNER ──────────────────────────────────────────────── */
 .priority-banner{background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:20px}
 .pb-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#DC2626;margin-bottom:7px}
@@ -269,14 +344,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 <!-- CONTROL BAR -->
 <div class="control-bar">
   <div class="control-inner">
-    <div class="view-group" id="view-group">
-      <button class="view-btn active" data-view="ranked" onclick="setView('ranked')">Ranked</button>
-      <span class="view-sep"></span>
-      <button class="view-btn" data-view="enforcement" onclick="setView('enforcement')">Enforcement &amp; Risk</button>
-      <button class="view-btn" data-view="legislation" onclick="setView('legislation')">Legislation</button>
-      <button class="view-btn" data-view="public" onclick="setView('public')">Public Impact</button>
-      <button class="view-btn" data-view="deadlines" onclick="setView('deadlines')">Deadlines</button>
-    </div>
+    <div class="view-group" id="view-group"></div>
     <div class="control-right">
       <div class="search-wrap">
         <svg class="search-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -295,6 +363,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
     <button class="clear-date-btn" onclick="clearDateFilter()">Clear</button>
     <span class="date-filter-note">Items with unknown publication dates are surfaced separately, not silently included.</span>
   </div>
+  <div id="client-filter-row" class="client-filter-row hidden"></div>
 </div>
 
 <main id="main-content">
@@ -331,8 +400,9 @@ let currentView    = 'ranked';
 let currentSearch  = '';
 let currentCategory = null;   // null = all categories
 let dateFilter     = { active: false, from: null, to: null };
-let whatsNewOpen   = true;
-let allArticles    = [];
+let whatsNewOpen      = true;
+let allArticles       = [];
+let currentClientType = null;  // null = all
 
 const rankSort  = (a, b) =>
   (URGENCY_ORDER[a.urgency] ?? 2) - (URGENCY_ORDER[b.urgency] ?? 2) ||
@@ -376,7 +446,111 @@ const VIEWS = {
     matchFn: a => a.is_comment_period || !!a.comment_deadline,
     sortFn: (a, b) => (a.comment_deadline || '9999').localeCompare(b.comment_deadline || '9999'),
   },
+  revenue: {
+    label: 'Revenue & Ops',
+    desc: 'Rules and actions with direct reimbursement, billing, payment, or operational impact for clients — sorted by importance score.',
+    matchFn: a =>
+      /billing|revenue|coding|reimbursement|payment reform|payer.*market|market access|hospital.*oper|post-acute|value-based/i.test(a.category || '') ||
+      /Medicare.*Medicaid Policy|Medical Coding|Payer.*Market|Hospital.*Post-Acute/i.test(a.category || ''),
+    sortFn: scoreSort,
+  },
 };
+
+const EDITION_VIEWS = {
+  consulting: ['ranked', 'enforcement', 'revenue', 'legislation', 'deadlines'],
+  policy:     ['ranked', 'enforcement', 'legislation', 'public', 'deadlines'],
+};
+
+// ── VIEW BUTTONS ──────────────────────────────────────────────────────────────────────────────
+function renderViewButtons(ed) {
+  const vg = document.getElementById('view-group');
+  if (!vg) return;
+  const keys = EDITION_VIEWS[ed] || EDITION_VIEWS.consulting;
+  // Reset to 'ranked' if current view isn't in this edition
+  if (!keys.includes(currentView)) currentView = 'ranked';
+  let html = '';
+  keys.forEach((key, i) => {
+    if (i > 0) html += '<span class="view-sep"></span>';
+    html += `<button class="view-btn${currentView === key ? ' active' : ''}" data-view="${key}" onclick="setView('${key}')">${esc(VIEWS[key].label)}</button>`;
+  });
+  vg.innerHTML = html;
+}
+
+// ── CLIENT TYPE FILTER ─────────────────────────────────────────────
+const ALL_CLIENT_TYPES = [
+  'Hospital/Health System','Managed Care/Payer','Physician/Group Practice',
+  'Life Sciences/Pharma','Medical Device','Post-Acute/LTC',
+  'Behavioral Health','Digital Health',
+];
+const CLIENT_TYPE_ABBR = {
+  'Hospital/Health System': 'Hospital',
+  'Managed Care/Payer': 'Payer/MCO',
+  'Physician/Group Practice': 'Physician',
+  'Life Sciences/Pharma': 'Pharma',
+  'Medical Device': 'Device',
+  'Post-Acute/LTC': 'Post-Acute',
+  'Behavioral Health': 'Behavioral',
+  'Digital Health': 'Digital',
+};
+
+function renderClientFilter(articles) {
+  const row = document.getElementById('client-filter-row');
+  if (!row) return;
+  // Only show types that appear in this edition's articles
+  const present = new Set();
+  articles.forEach(a => (a.client_types||[]).forEach(t => present.add(t)));
+  const types = ALL_CLIENT_TYPES.filter(t => present.has(t));
+  if (types.length === 0) { row.classList.add('hidden'); return; }
+  row.classList.remove('hidden');
+  let html = '<span class="client-filter-label">Filter by client:</span>';
+  types.forEach(t => {
+    const abbr = CLIENT_TYPE_ABBR[t] || t;
+    const active = currentClientType === t ? ' active' : '';
+    html += `<button class="client-filter-btn${active}" onclick="setClientFilter('${t.replace(/'/g,"\\'")}')"> ${esc(abbr)}</button>`;
+  });
+  if (currentClientType) html += `<button class="client-filter-btn active" onclick="clearClientFilter()" style="background:#DC2626;border-color:#DC2626">✕ Clear</button>`;
+  row.innerHTML = html;
+}
+
+function setClientFilter(type) {
+  currentClientType = (currentClientType === type) ? null : type;
+  renderClientFilter(allArticles);
+  renderView();
+}
+function clearClientFilter() {
+  currentClientType = null;
+  renderClientFilter(allArticles);
+  renderView();
+}
+
+// ── WHAT TO WATCH PANEL ───────────────────────────────────────────
+let wtwOpen = true;
+function buildWhatToWatchPanel(items, edLabel) {
+  if (!items || items.length === 0) return '';
+  const itemsHtml = items.map(txt =>
+    `<div class="wtw-item"><span class="wtw-bullet">▸</span><span>${esc(txt)}</span></div>`
+  ).join('');
+  return `<div class="wtw-panel">
+    <div class="wtw-inner">
+      <div class="wtw-header" onclick="toggleWtw()">
+        <span class="wtw-icon">👁</span>
+        <span class="wtw-title">What to Watch</span>
+        <span class="wtw-edition">— next 30–90 days · ${esc(edLabel)}</span>
+        <span class="wtw-chevron open" id="wtw-chevron">▾</span>
+      </div>
+      <div class="wtw-body open" id="wtw-body">
+        <div class="wtw-grid">${itemsHtml}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function toggleWtw() {
+  wtwOpen = !wtwOpen;
+  const body = document.getElementById('wtw-body');
+  const chev = document.getElementById('wtw-chevron');
+  if (body) body.classList.toggle('open', wtwOpen);
+  if (chev) { chev.classList.toggle('open', wtwOpen); chev.textContent = wtwOpen ? '▾' : '▸'; }
+}
 
 // ── INIT ──────────────────────────────────────────────────────────
 async function init() {
@@ -399,6 +573,7 @@ function switchEdition(ed) {
   currentSearch  = '';
   currentView    = 'ranked';
   currentCategory = null;
+  currentClientType = null;
   dateFilter     = { active: false, from: null, to: null };
   const si = document.getElementById('search-input');
   if (si) { si.value = ''; document.getElementById('search-clear').classList.add('hidden'); }
@@ -482,6 +657,11 @@ function applyFilters(articles) {
     dated = dated.filter(a => a.category === currentCategory);
   }
 
+  // Client type filter
+  if (currentClientType) {
+    dated = dated.filter(a => Array.isArray(a.client_types) && a.client_types.includes(currentClientType));
+  }
+
   // Date filter: split known-date from date_unknown (operates on the
   // already category-filtered set so filters compose correctly)
   if (dateFilter.active && (dateFilter.from || dateFilter.to)) {
@@ -518,6 +698,7 @@ function renderEdition(ed) {
     return;
   }
 
+  currentClientType = null;
   allArticles = data.articles.map((a, i) => ({ ...a, _id: String(i) }));
 
   const genDate = new Date(newsletterData.generated_at);
@@ -531,6 +712,9 @@ function renderEdition(ed) {
   // What's New panel
   html += buildWhatsNewPanel(data.whats_new);
 
+  // What to Watch panel
+  html += buildWhatToWatchPanel(data.what_to_watch, edLabel);
+
   // Issue header
   html += `<div class="issue-header">
     <div class="issue-meta">${edLabel} &nbsp;·&nbsp; Week of ${esc(newsletterData.week_of)}</div>
@@ -540,8 +724,12 @@ function renderEdition(ed) {
   </div>
   <div class="en-wrap">
     <div class="editors-note">
-      <div class="en-label">Editor's Note</div>
-      <p class="en-text" id="editors-note-text">${esc(data.editors_note || '')}</p>
+      <div class="en-label" onclick="toggleEditorsNote()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+        <span>Editor's Note</span><span id="en-chevron" style="font-size:11px;color:#9C9A94">▸ expand</span>
+      </div>
+      <div id="editors-note-body" style="display:none">
+        <p class="en-text" id="editors-note-text" style="margin-top:8px">${esc(data.editors_note || '')}</p>
+      </div>
     </div>
   </div>`;
 
@@ -554,6 +742,8 @@ function renderEdition(ed) {
   document.getElementById('content').innerHTML = html;
   renderSidebar(data);
   renderView();
+  renderViewButtons(ed);
+  renderClientFilter(allArticles);
 }
 
 // ── WHAT'S NEW PANEL ──────────────────────────────────────────────
@@ -612,6 +802,15 @@ function buildWhatsNewPanel(wn) {
   </div>`;
 }
 
+let editorsNoteOpen = false;
+function toggleEditorsNote() {
+  editorsNoteOpen = !editorsNoteOpen;
+  const body    = document.getElementById('editors-note-body');
+  const chevron = document.getElementById('en-chevron');
+  if (body)    body.style.display = editorsNoteOpen ? '' : 'none';
+  if (chevron) chevron.textContent = editorsNoteOpen ? '▾ collapse' : '▸ expand';
+}
+
 function toggleWhatsNew() {
   const body    = document.getElementById('wn-body');
   const chevron = document.getElementById('wn-chevron');
@@ -622,6 +821,49 @@ function toggleWhatsNew() {
 }
 
 // ── RENDER VIEW ───────────────────────────────────────────────────
+// ── TOPIC GROUPING ─────────────────────────────────────────────────
+function groupArticles(articles) {
+  // Returns sorted items: {type:'single',article,_urg,_score} or {type:'group',name,articles,_urg,_score}
+  const groupMap = {};
+  const items = [];
+  articles.forEach(a => {
+    const g = a.topic_group;
+    if (g) {
+      (groupMap[g] = groupMap[g] || []).push(a);
+    } else {
+      items.push({type:'single', article:a, _urg: URGENCY_ORDER[a.urgency??'routine']??2, _score: a.importance_score||0});
+    }
+  });
+  Object.entries(groupMap).forEach(([name, arts]) => {
+    const _urg   = Math.min(...arts.map(a => URGENCY_ORDER[a.urgency??'routine']??2));
+    const _score = Math.max(...arts.map(a => a.importance_score||0));
+    items.push({type:'group', name, articles: arts, _urg, _score});
+  });
+  items.sort((a,b) => a._urg - b._urg || b._score - a._score);
+  return items;
+}
+
+function buildGroupCard(group, tierRenderer) {
+  const STRIPE_COLORS = {urgent:'#DC2626',important:'#D97706',routine:'#94A3B8',discard:'#CBD5E1'};
+  const sorted = [...group.articles].sort((a,b) =>
+    (URGENCY_ORDER[a.urgency??'routine']??2) - (URGENCY_ORDER[b.urgency??'routine']??2) ||
+    (b.importance_score||0) - (a.importance_score||0)
+  );
+  const topUrg = sorted[0].urgency || 'routine';
+  const stripeColor = STRIPE_COLORS[topUrg] || STRIPE_COLORS.routine;
+  const cards = sorted.map((a, i) => i === 0 ? buildFullCard(a) : buildCompactCard(a)).join('');
+  return `<div class="topic-group">
+    <div class="topic-group-header" onclick="this.closest('.topic-group').classList.toggle('collapsed')">
+      <div class="topic-group-stripe" style="background:${stripeColor}"></div>
+      <span class="topic-group-label">Topic</span>
+      <span class="topic-group-name">${esc(group.name)}</span>
+      <span class="topic-group-count">${sorted.length} articles</span>
+      <span class="topic-group-chevron">▾</span>
+    </div>
+    <div class="topic-group-body">${cards}</div>
+  </div>`;
+}
+
 function renderView() {
   const { dated, unknown } = applyFilters(allArticles);
   const viewCfg = VIEWS[currentView];
@@ -649,18 +891,32 @@ function renderView() {
 
 // ── RANKED VIEW ───────────────────────────────────────────────────
 function renderRankedView(articles, unknownArticles) {
-  const urgent    = articles.filter(a => a.urgency === 'urgent');
-  const important = articles.filter(a => a.urgency === 'important');
-  const routine   = articles.filter(a => a.urgency === 'routine');
-  const discard   = articles.filter(a => a.urgency === 'discard');
+  const discard    = articles.filter(a => a.urgency === 'discard');
+  const nonDiscard = articles.filter(a => a.urgency !== 'discard');
+
+  const items = groupArticles(nonDiscard);
+  const urgentItems    = items.filter(i => i._urg === 0);
+  const importantItems = items.filter(i => i._urg === 1);
+  const routineItems   = items.filter(i => i._urg >= 2);
+
+  const countArticles = items => items.reduce((n, i) => n + (i.type === 'group' ? i.articles.length : 1), 0);
+
+  function renderItem(item, tier) {
+    if (item.type === 'group') return buildGroupCard(item);
+    const a = item.article;
+    if (tier === 'urgent') return buildFullCard(a);
+    if (tier === 'important') return buildCompactCard(a);
+    return buildRoutineCard(a);
+  }
 
   let html = '';
 
-  // Priority banner (top 4 urgent items quick-scan)
-  if (urgent.length > 0) {
+  // Priority banner (top 4 urgent articles quick-scan)
+  const urgentArts = articles.filter(a => a.urgency === 'urgent');
+  if (urgentArts.length > 0) {
     html += `<div class="priority-banner">
       <div class="pb-label">🔴 Priority Items</div>`;
-    urgent.slice(0, 4).forEach(a => {
+    urgentArts.slice(0, 4).forEach(a => {
       html += `<div class="pb-item"><span>▸</span>
         <span><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.headline || a.title)}</a>${a.now_what ? ' — ' + esc(a.now_what) : ''}</span>
       </div>`;
@@ -668,31 +924,27 @@ function renderRankedView(articles, unknownArticles) {
     html += '</div>';
   }
 
-  // Urgent section — full cards
-  if (urgent.length > 0) {
+  if (urgentItems.length > 0) {
     html += `<div class="tier-section">
-      <div class="tier-label"><span class="tier-dot urgent"></span><span class="tier-name">Priority</span><span class="tier-count">${urgent.length}</span></div>
-      ${urgent.map(a => buildFullCard(a)).join('')}
+      <div class="tier-label"><span class="tier-dot urgent"></span><span class="tier-name">Priority</span><span class="tier-count">${countArticles(urgentItems)}</span></div>
+      ${urgentItems.map(i => renderItem(i, 'urgent')).join('')}
     </div>`;
   }
 
-  // Important section — compact expandable
-  if (important.length > 0) {
+  if (importantItems.length > 0) {
     html += `<div class="tier-section">
-      <div class="tier-label"><span class="tier-dot important"></span><span class="tier-name">Important</span><span class="tier-count">${important.length}</span></div>
-      ${important.map(a => buildCompactCard(a)).join('')}
+      <div class="tier-label"><span class="tier-dot important"></span><span class="tier-name">Important</span><span class="tier-count">${countArticles(importantItems)}</span></div>
+      ${importantItems.map(i => renderItem(i, 'important')).join('')}
     </div>`;
   }
 
-  // Routine section — lighter cards
-  if (routine.length > 0) {
+  if (routineItems.length > 0) {
     html += `<div class="tier-section">
-      <div class="tier-label"><span class="tier-dot routine"></span><span class="tier-name">Routine</span><span class="tier-count">${routine.length}</span></div>
-      ${routine.map(a => buildRoutineCard(a)).join('')}
+      <div class="tier-label"><span class="tier-dot routine"></span><span class="tier-name">Routine</span><span class="tier-count">${countArticles(routineItems)}</span></div>
+      ${routineItems.map(i => renderItem(i, 'routine')).join('')}
     </div>`;
   }
 
-  // Discard drawer
   if (discard.length > 0) {
     html += `<div class="drawer-section">
       <button class="drawer-btn" onclick="toggleDrawer(this)">Show ${discard.length} additional item${discard.length !== 1 ? 's' : ''} ▾</button>
@@ -732,12 +984,13 @@ function renderQuestionView(articles, unknownArticles, viewCfg) {
   if (matching.length === 0) {
     html += `<div class="empty-state"><div class="empty-icon">🔎</div><div class="empty-msg">No items match this view with the current filters.</div></div>`;
   } else {
-    // Show as tiered cards within the matching set
-    matching.forEach(a => {
-      if ((a.importance_score || 0) >= 65 || a.urgency === 'urgent') {
-        html += buildFullCard(a, true);
+    groupArticles(matching).forEach(item => {
+      if (item.type === 'group') {
+        html += buildGroupCard(item);
       } else {
-        html += buildCompactCard(a, true);
+        const a = item.article;
+        html += ((a.importance_score || 0) >= 65 || a.urgency === 'urgent')
+          ? buildFullCard(a, true) : buildCompactCard(a, true);
       }
     });
   }
@@ -763,19 +1016,35 @@ function renderQuestionView(articles, unknownArticles, viewCfg) {
 }
 
 // ── CARD BUILDERS ─────────────────────────────────────────────────
+function buildRegStageBadge(stage) {
+  const map = {
+    'NPRM': 'nprm', 'Final Rule': 'final-rule', 'Interim Final Rule': 'interim-final',
+    'Guidance': 'guidance', 'Enforcement Action': 'enforcement', 'Court Ruling': 'court-ruling',
+    'Legislation': 'legislation', 'Advisory Opinion': 'advisory', 'Recall': 'recall',
+    'Drug/Device Approval': 'approval', 'Administrative Action': 'admin',
+  };
+  const cls = map[stage] || 'admin';
+  return `<span class="reg-stage ${cls}">${esc(stage)}</span>`;
+}
+
 function buildFullCard(a, showCatTag) {
+  const urg = a.urgency || 'routine';
   const pub = a.date_unknown
     ? '<span class="date-unknown-tag">date unknown</span>'
-    : (a.published ? `<span class="date-tag">${new Date(a.published).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'})}</span>` : '');
-  const urg = a.urgency || 'routine';
-  const score = (a.importance_score != null) ? `<span class="importance-tag">${a.importance_score}</span>` : '';
-
-  const soWhatHtml = a.so_what ? `<div class="card-so-what"><strong>Analysis</strong>${esc(a.so_what)}</div>` : '';
-  const nowWhatHtml = a.now_what ? `<div class="card-now-what"><strong>→ Now what:</strong> ${esc(a.now_what)}</div>` : '';
+    : (a.published ? `<span class="date-tag">${new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>` : '');
+  const score = a.importance_score != null ? `<span class="importance-tag">${a.importance_score}</span>` : '';
+  const catTag = (showCatTag && a.category) ? `<span class="doc-type-pill">${esc(a.category)}</span>` : '';
+  const stageHtml = a.regulatory_stage ? buildRegStageBadge(a.regulatory_stage) : '';
+  const effDateHtml = (a.effective_date && a.effective_date !== 'TBD' && a.effective_date !== a.published?.slice(0,10))
+    ? `<span class="effective-date-tag">${esc(a.effective_date)}</span>` : '';
+  const clientTypesHtml = (a.client_types && a.client_types.length > 0)
+    ? `<div class="client-types">${a.client_types.map(t => `<span class="client-chip${currentClientType===t?' active-filter':''}">${esc(CLIENT_TYPE_ABBR[t]||t)}</span>`).join('')}</div>` : '';
+  const watchForHtml = a.watch_for ? `<div class="card-watch-for">${esc(a.watch_for)}</div>` : '';
   const deadlineHtml = a.comment_deadline ? `<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>` : '';
-
-  const confHtml = a.confidence_note
-    ? `<div class="confidence-note">${esc(a.confidence_note)}</div>` : '';
+  const confHtml = a.confidence_note ? `<div class="confidence-note">${esc(a.confidence_note)}</div>` : '';
+  const impactHtml = a.so_what ? `<div class="card-impact">${esc(a.so_what)}</div>` : '';
+  const actionHtml = a.now_what ? `<div class="card-action"><span class="card-action-label">→</span>${esc(a.now_what)}</div>` : '';
+  const summaryHtml = a.summary ? `<details class="card-details"><summary>Background</summary><p class="card-summary-detail">${esc(a.summary)}</p></details>` : '';
 
   let sbHtml = '';
   const sb = a.stakeholder_balance;
@@ -789,27 +1058,19 @@ function buildFullCard(a, showCatTag) {
     </div>`;
   }
 
-  const catTag = (showCatTag && a.category) ? `<span class="doc-type-pill">${esc(a.category)}</span>` : '';
-
   return `<div class="article-card">
     <div class="card-inner">
       <div class="urgency-stripe ${urg}"></div>
       <div class="card-body">
         <div class="card-meta-row">
           <span class="source-pill"><a href="${esc(a.source_url||'#')}" target="_blank" rel="noopener">${esc((a.source_name||'').split('—')[0].trim())}</a></span>
-          ${a.doc_type ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
-          ${catTag}
-          ${pub}
-          ${score}
-          ${urg==='urgent' ? '<span class="urgency-badge urgent">🔴 Urgent</span>' : urg==='important' ? '<span class="urgency-badge important">🟡 Important</span>' : ''}
+          ${stageHtml}
+          ${a.doc_type && a.doc_type !== a.regulatory_stage ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
+          ${catTag}${pub}${effDateHtml}${score}
         </div>
         <div class="card-headline"><a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
-        ${a.summary ? `<p class="card-summary">${esc(a.summary)}</p>` : ''}
-        ${soWhatHtml}
-        ${nowWhatHtml}
-        ${sbHtml}
-        ${confHtml}
-        ${deadlineHtml}
+        ${clientTypesHtml}
+        ${impactHtml}${actionHtml}${watchForHtml}${sbHtml}${confHtml}${deadlineHtml}${summaryHtml}
       </div>
     </div>
   </div>`;
@@ -817,15 +1078,19 @@ function buildFullCard(a, showCatTag) {
 
 function buildCompactCard(a, showCatTag) {
   const urg  = a.urgency || 'routine';
-  const teaser = a.now_what || a.implication || '';
+  const teaser = a.so_what || a.now_what || '';
   const pub = a.date_unknown ? ' · <span style="color:#B45309;font-size:10px">date unknown</span>' : (a.published ? ' · ' + new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '');
 
   // detail section (shown when expanded)
   const score = (a.importance_score != null) ? `<span class="importance-tag">${a.importance_score}</span>` : '';
-  const soWhatHtml = a.so_what ? `<div class="card-so-what" style="margin-top:8px"><strong>Analysis</strong>${esc(a.so_what)}</div>` : '';
-  const nowWhatHtml = a.now_what ? `<div class="card-now-what"><strong>→ Now what:</strong> ${esc(a.now_what)}</div>` : '';
+  const soWhatHtml = '';
+  const nowWhatHtml = a.now_what ? `<div class="card-action" style="margin-top:6px"><span class="card-action-label">→</span>${esc(a.now_what)}</div>` : '';
   const confHtml = a.confidence_note ? `<div class="confidence-note">${esc(a.confidence_note)}</div>` : '';
   const deadlineHtml = a.comment_deadline ? `<div class="comment-deadline">📋 Comment period closes: ${esc(a.comment_deadline)}</div>` : '';
+  const stageHtml = a.regulatory_stage ? buildRegStageBadge(a.regulatory_stage) : '';
+  const clientTypesHtml = (a.client_types && a.client_types.length > 0)
+    ? `<div class="client-types" style="margin-top:4px">${a.client_types.map(t => `<span class="client-chip">${esc(CLIENT_TYPE_ABBR[t]||t)}</span>`).join('')}</div>` : '';
+  const watchForHtml = a.watch_for ? `<div class="card-watch-for">${esc(a.watch_for)}</div>` : '';
 
   let sbHtml = '';
   const sb = a.stakeholder_balance;
@@ -853,7 +1118,7 @@ function buildCompactCard(a, showCatTag) {
       <div class="compact-body">
         <div class="compact-headline">
           <a href="${esc(a.url||'#')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(a.headline||a.title)}</a>
-          ${pub}
+          ${stageHtml}${pub}
         </div>
         ${teaser ? `<div class="compact-teaser">→ ${esc(teaser)}</div>` : ''}
         ${urg==='urgent' ? '<span class="urgency-badge urgent" style="font-size:9px;margin-left:4px">Urgent</span>' : urg==='important' ? '<span class="urgency-badge important" style="font-size:9px;margin-left:4px">Important</span>' : ''}
@@ -862,9 +1127,10 @@ function buildCompactCard(a, showCatTag) {
     </div>
     <div class="compact-detail">
       ${metaHtml}
-      ${summaryHtml}
-      ${soWhatHtml}
+      ${clientTypesHtml}
       ${nowWhatHtml}
+      ${watchForHtml}
+      ${summaryHtml}
       ${sbHtml}
       ${confHtml}
       ${deadlineHtml}
