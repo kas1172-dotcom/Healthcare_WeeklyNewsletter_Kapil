@@ -181,6 +181,44 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 /* ── ONGOING (persisted) BADGE ────────────────────────────────────── */
 .ongoing-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;white-space:nowrap;flex-shrink:0}
 
+/* ── STAT CHIPS (dollar / population / deadline) ──────────────────── */
+.stat-chips{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0 2px}
+.stat-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;white-space:nowrap;line-height:1.2}
+.stat-chip.money{background:#F0FDF4;border:1px solid #BBF7D0;color:#15803D}
+.stat-chip.people{background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8}
+.stat-chip.deadline{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E}
+.stat-chip.deadline.soon{background:#FEF2F2;border:1px solid #FECACA;color:#DC2626}
+
+/* ── EDITION STATS ROW ────────────────────────────────────────────── */
+.edition-stats{display:flex;flex-wrap:wrap;gap:6px;padding:10px 24px 0;max-width:1100px;margin:0 auto}
+.estat-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.12);white-space:nowrap}
+.estat-chip .estat-val{font-size:13px;font-weight:700;color:#fff}
+.estat-chip.urgent-stat{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.3);color:#FCA5A5}
+.estat-chip.urgent-stat .estat-val{color:#F87171}
+
+/* ── TRENDS BAND ──────────────────────────────────────────────────── */
+.trends-band{background:#F8FAFC;border-bottom:1px solid #E2E8F0;overflow:hidden}
+.trends-inner{max-width:1100px;margin:0 auto;padding:0 24px}
+.trends-header{display:flex;align-items:center;gap:8px;padding:10px 0;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
+.trends-band.open .trends-header{border-bottom-color:#E2E8F0}
+.trends-icon{font-size:12px}
+.trends-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#475569}
+.trends-subtitle{font-size:10px;color:#94A3B8;margin-left:4px}
+.trends-chevron{margin-left:auto;font-size:11px;color:#94A3B8;transition:transform .2s}
+.trends-band.open .trends-chevron{transform:rotate(180deg)}
+.trends-body{display:none;padding:12px 0 16px}
+.trends-band.open .trends-body{display:block}
+.trends-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.trend-card{background:#fff;border:1px solid #E8E6DF;border-radius:8px;padding:12px 14px;overflow:hidden}
+.trend-card-title{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748B;margin-bottom:8px}
+.trend-card svg{display:block;width:100%;overflow:visible}
+.trend-empty{font-size:11px;color:#94A3B8;font-style:italic;text-align:center;padding:12px 0}
+.trend-note{font-size:9px;color:#94A3B8;margin-top:5px;text-align:right}
+
+/* timeline dot hover */
+.tl-dot{cursor:pointer;transition:r .12s}
+.tl-dot:hover{r:7}
+
 /* ── WHAT TO WATCH PANEL ──────────────────────────────────────────── */
 .wtw-panel{background:#0C1A2E;border-bottom:1px solid #1E3A5F;padding:14px 0}
 .wtw-inner{max-width:1100px;margin:0 auto;padding:0 24px}
@@ -719,12 +757,14 @@ function renderEdition(ed) {
   html += buildWhatToWatchPanel(data.what_to_watch, edLabel);
 
   // Issue header
+  const statsHtml = buildEditionStats(data.articles, data.whats_new);
   html += `<div class="issue-header">
     <div class="issue-meta">${edLabel} &nbsp;·&nbsp; Week of ${esc(newsletterData.week_of)}</div>
     <h1 class="issue-title">${esc(data.subject_line || 'Healthcare Intelligence Briefing')}</h1>
     <p class="issue-theme">${esc(data.theme_of_week || '')}</p>
     <div class="issue-dateline">Updated ${esc(dateStr)}</div>
   </div>
+  ${statsHtml ? `<div class="issue-header" style="padding:8px 24px 14px;background:#0C1A2E">${statsHtml}</div>` : ''}
   <div class="en-wrap">
     <div class="editors-note">
       <div class="en-label" onclick="toggleEditorsNote()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between">
@@ -735,6 +775,9 @@ function renderEdition(ed) {
       </div>
     </div>
   </div>`;
+
+  // Trends band placeholder — populated async after archive loads
+  html += `<div id="trends-anchor"></div>`;
 
   // Page body (main col + sidebar)
   html += `<div class="page-body">
@@ -747,6 +790,9 @@ function renderEdition(ed) {
   renderView();
   renderViewButtons(ed);
   renderClientFilter(allArticles);
+
+  // Load archive asynchronously — never blocks article rendering
+  loadAndRenderTrends(ed);
 }
 
 // ── WHAT'S NEW PANEL ──────────────────────────────────────────────
@@ -1049,6 +1095,7 @@ function buildFullCard(a, showCatTag) {
   const actionHtml = a.now_what ? `<div class="card-action"><span class="card-action-label">→</span>${esc(a.now_what)}</div>` : '';
   const summaryHtml = a.summary ? `<details class="card-details"><summary>Background</summary><p class="card-summary-detail">${esc(a.summary)}</p></details>` : '';
   const ongoingBadge = a.persisted ? `<span class="ongoing-badge">Ongoing</span>` : '';
+  const statChipsHtml = buildStatChips(a);
 
   let sbHtml = '';
   const sb = a.stakeholder_balance;
@@ -1062,7 +1109,7 @@ function buildFullCard(a, showCatTag) {
     </div>`;
   }
 
-  return `<div class="article-card">
+  return `<div class="article-card" data-url="${esc(a.url||'')}">
     <div class="card-inner">
       <div class="urgency-stripe ${urg}"></div>
       <div class="card-body">
@@ -1072,6 +1119,7 @@ function buildFullCard(a, showCatTag) {
           ${a.doc_type && a.doc_type !== a.regulatory_stage ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
           ${catTag}${ongoingBadge}${pub}${effDateHtml}${score}
         </div>
+        ${statChipsHtml}
         <div class="card-headline"><a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
         ${clientTypesHtml}
         ${impactHtml}${actionHtml}${watchForHtml}${sbHtml}${confHtml}${deadlineHtml}${summaryHtml}
@@ -1096,6 +1144,7 @@ function buildCompactCard(a, showCatTag) {
     ? `<div class="client-types" style="margin-top:4px">${a.client_types.map(t => `<span class="client-chip">${esc(CLIENT_TYPE_ABBR[t]||t)}</span>`).join('')}</div>` : '';
   const watchForHtml = a.watch_for ? `<div class="card-watch-for">${esc(a.watch_for)}</div>` : '';
   const ongoingBadgeC = a.persisted ? `<span class="ongoing-badge" style="margin-left:4px">Ongoing</span>` : '';
+  const statChipsC = buildStatChips(a);
 
   let sbHtml = '';
   const sb = a.stakeholder_balance;
@@ -1117,7 +1166,7 @@ function buildCompactCard(a, showCatTag) {
     <span class="date-tag">${a.date_unknown ? '<span style="color:#B45309">date unknown</span>' : (a.published ? new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '')}</span>
   </div>`;
 
-  return `<div class="compact-card" onclick="toggleCard(this)">
+  return `<div class="compact-card" data-url="${esc(a.url||'')}" onclick="toggleCard(this)">
     <div class="compact-inner">
       <div class="urgency-stripe ${urg}" style="width:3px"></div>
       <div class="compact-body">
@@ -1132,6 +1181,7 @@ function buildCompactCard(a, showCatTag) {
     </div>
     <div class="compact-detail">
       ${metaHtml}
+      ${statChipsC}
       ${clientTypesHtml}
       ${nowWhatHtml}
       ${watchForHtml}
@@ -1266,6 +1316,373 @@ function scrollToTier() {
 function esc(s) {
   return (s || '').toString()
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function fmtDollars(n) {
+  if (!n && n !== 0) return null;
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(n % 1e9 === 0 ? 0 : 1) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(n % 1e6 === 0 ? 0 : 1) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 0) + 'K';
+  return '$' + n.toLocaleString();
+}
+
+function fmtPop(n) {
+  if (!n && n !== 0) return null;
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 0) + 'K';
+  return n.toLocaleString();
+}
+
+function fmtDateShort(str) {
+  if (!str) return '';
+  try {
+    // Parse as local date to avoid timezone shift
+    const [y, m, d] = str.slice(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch (e) { return str.slice(0, 7); }
+}
+
+function buildStatChips(a) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const chips = [];
+  if (a.dollar_amount) {
+    const s = fmtDollars(a.dollar_amount);
+    if (s) chips.push(`<span class="stat-chip money">💰 ${esc(s)}</span>`);
+  }
+  if (a.affected_population) {
+    const p = fmtPop(a.affected_population);
+    const desc = a.affected_population_desc ? esc(a.affected_population_desc) : 'affected';
+    if (p) chips.push(`<span class="stat-chip people">👥 ${esc(p)} ${desc}</span>`);
+  }
+  if (a.action_deadline) {
+    const dl = a.action_deadline.slice(0, 10);
+    const diff = Math.ceil((new Date(dl) - today) / 86400000);
+    if (diff >= 0 && diff <= 180) {
+      const soon = diff <= 14 ? ' soon' : '';
+      chips.push(`<span class="stat-chip deadline${soon}">⏰ ${esc(fmtDateShort(dl))}${diff <= 7 ? ' (' + diff + 'd)' : ''}</span>`);
+    }
+  }
+  return chips.length ? `<div class="stat-chips">${chips.join('')}</div>` : '';
+}
+
+function scrollToArticle(url) {
+  const card = document.querySelector(`[data-url="${CSS.escape(url)}"]`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const old = card.style.outline;
+  card.style.outline = '2px solid #0D9488';
+  card.style.outlineOffset = '2px';
+  setTimeout(() => { card.style.outline = old; card.style.outlineOffset = ''; }, 2000);
+}
+
+// ── EDITION STATS ──────────────────────────────────────────────────
+function buildEditionStats(articles, wn) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const chips = [];
+
+  // Enforcement $ this period
+  const enfDollars = (articles || [])
+    .filter(a => /compliance|enforcement/i.test(a.category || ''))
+    .reduce((s, a) => s + (a.dollar_amount || 0), 0);
+  if (enfDollars > 0) {
+    const s = fmtDollars(enfDollars);
+    chips.push(`<span class="estat-chip urgent-stat"><span class="estat-val">${esc(s)}</span> enforcement $</span>`);
+  }
+
+  // Open comment periods
+  const openComments = (articles || []).filter(a => a.is_comment_period).length;
+  if (openComments > 0)
+    chips.push(`<span class="estat-chip"><span class="estat-val">${openComments}</span> open comment period${openComments > 1 ? 's' : ''}</span>`);
+
+  // Days to nearest deadline
+  let nearestDays = null;
+  for (const a of (articles || [])) {
+    const d = a.action_deadline || a.comment_deadline;
+    if (!d) continue;
+    const diff = Math.ceil((new Date(d) - today) / 86400000);
+    if (diff >= 0 && (nearestDays === null || diff < nearestDays)) nearestDays = diff;
+  }
+  if (nearestDays !== null)
+    chips.push(`<span class="estat-chip${nearestDays <= 14 ? ' urgent-stat' : ''}"><span class="estat-val">${nearestDays}d</span> to nearest deadline</span>`);
+
+  // New since last run
+  const newCount = wn && wn.count > 0 ? wn.count : 0;
+  if (newCount > 0)
+    chips.push(`<span class="estat-chip"><span class="estat-val">${newCount}</span> new this week</span>`);
+
+  if (!chips.length) return '';
+  return `<div class="edition-stats">${chips.join('')}</div>`;
+}
+
+// ── ARCHIVE-BACKED TRENDS ──────────────────────────────────────────
+const ARCHIVE_URL = './newsletter_archive.json';
+let _archiveCache = null;
+
+async function loadAndRenderTrends(ed) {
+  try {
+    if (!_archiveCache) {
+      const r = await fetch(ARCHIVE_URL + '?t=' + Date.now());
+      if (!r.ok) return;
+      _archiveCache = await r.json();
+    }
+    const anchor = document.getElementById('trends-anchor');
+    if (!anchor) return;
+    anchor.innerHTML = buildTrendsBand(_archiveCache, ed, allArticles);
+  } catch (_) {
+    // Archive load failure must never block or error the page
+  }
+}
+
+function toggleTrends() {
+  const band = document.getElementById('trends-band');
+  if (band) band.classList.toggle('open');
+}
+
+function buildTrendsBand(arch, ed, articles) {
+  const runs = (arch && arch.runs) || [];
+  const charts = [];
+
+  // Deadline timeline works for both editions — no archive required
+  const tlSvg = buildDeadlineTimeline(articles);
+  if (tlSvg) charts.push(`<div class="trend-card">
+    <div class="trend-card-title">📅 Upcoming Deadlines <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94A3B8">— next 90 days</span></div>
+    ${tlSvg}
+    <div class="trend-note">Tap a dot to scroll to that article · colored by urgency</div>
+  </div>`);
+
+  if (runs.length >= 2) {
+    if (ed === 'consulting') {
+      const etSvg = buildEnforcementTracker(arch, articles);
+      if (etSvg) charts.push(`<div class="trend-card">
+        <div class="trend-card-title">⚖️ Enforcement Tracker <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94A3B8">— since Jun 2026</span></div>
+        ${etSvg}
+        <div class="trend-note">Bars = enforcement actions per run · $ = cumulative settlement total</div>
+      </div>`);
+    }
+    if (ed === 'policy') {
+      const heatSvg = buildCategoryHeat(arch, articles);
+      if (heatSvg) charts.push(`<div class="trend-card" style="grid-column:1/-1">
+        <div class="trend-card-title">🗂 Category Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94A3B8">— articles per week</span></div>
+        ${heatSvg}
+        <div class="trend-note">Darker = more articles that week · top 8 categories shown</div>
+      </div>`);
+    }
+  } else if (runs.length < 2) {
+    charts.push(`<div class="trend-card"><div class="trend-empty">Trend charts appear after 2 pipeline runs. Only deadline timeline is available now.</div></div>`);
+  }
+
+  if (!charts.length) return '';
+
+  return `<div class="trends-band open" id="trends-band">
+    <div class="trends-inner">
+      <div class="trends-header" onclick="toggleTrends()">
+        <span class="trends-icon">📈</span>
+        <span class="trends-title">Trends</span>
+        <span class="trends-subtitle">— deadlines, enforcement, category heat</span>
+        <span class="trends-chevron">▾</span>
+      </div>
+      <div class="trends-body">
+        <div class="trends-grid">${charts.join('')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── DEADLINE TIMELINE SVG ──────────────────────────────────────────
+function buildDeadlineTimeline(articles) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const DAYS = 90;
+  const endDate = new Date(today.getTime() + DAYS * 86400000);
+  const W = 560, H = 72, PAD = 30, lineY = 28;
+
+  // Collect articles with deadlines in window
+  const items = [];
+  const seen = new Set();
+  for (const a of (articles || [])) {
+    const dl = a.action_deadline || a.comment_deadline;
+    if (!dl || seen.has(dl + (a.url||''))) continue;
+    const dt = (() => { try { const [y,m,d] = dl.slice(0,10).split('-').map(Number); return new Date(y,m-1,d); } catch(_) { return null; } })();
+    if (!dt || dt < today || dt > endDate) continue;
+    seen.add(dl + (a.url||''));
+    items.push({ a, dt, pct: (dt - today) / (endDate - today) });
+  }
+  if (!items.length) return '';
+
+  // Sort by deadline
+  items.sort((x, y) => x.dt - y.dt);
+
+  const URCOLOR = { urgent: '#DC2626', important: '#D97706', routine: '#64748B', discard: '#CBD5E1' };
+  let s = '';
+
+  // Timeline line
+  s += `<line x1="${PAD}" y1="${lineY}" x2="${W-PAD}" y2="${lineY}" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>`;
+
+  // Today marker
+  s += `<polygon points="${PAD},${lineY-10} ${PAD-5},${lineY+1} ${PAD+5},${lineY+1}" fill="#0D9488"/>`;
+  s += `<text x="${PAD}" y="${lineY+16}" text-anchor="middle" font-size="8" fill="#0D9488" font-family="Inter,sans-serif" font-weight="600">Today</text>`;
+
+  // End label
+  const endLbl = endDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  s += `<text x="${W-PAD}" y="${lineY+16}" text-anchor="end" font-size="8" fill="#94A3B8" font-family="Inter,sans-serif">+90d · ${endLbl}</text>`;
+
+  // Dots — stagger vertically if x positions collide
+  const placed = []; // [{x, y}]
+  for (const { a, pct } of items) {
+    const x = PAD + pct * (W - 2 * PAD);
+    let yOff = lineY;
+    // Nudge up to avoid crowding (simple: if within 12px of placed dot, alternate above/below)
+    let bump = 0;
+    for (const p of placed) {
+      if (Math.abs(p.x - x) < 14) { bump = (bump === 0 ? -14 : 0); }
+    }
+    yOff += bump;
+    placed.push({ x, y: yOff });
+
+    const col = URCOLOR[a.urgency] || '#64748B';
+    const lbl = (() => { try { const [y,m,d] = (a.action_deadline||a.comment_deadline||'').slice(0,10).split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric'}); } catch(_) { return ''; } })();
+    const urlEsc = (a.url||'').replace(/'/g, '%27');
+    s += `<g onclick="scrollToArticle('${urlEsc}')" style="cursor:pointer" role="button" aria-label="${esc(a.headline||a.title||'')}">
+      <circle class="tl-dot" cx="${x.toFixed(1)}" cy="${yOff}" r="5" fill="${col}" stroke="#fff" stroke-width="1.5"/>
+      <text x="${x.toFixed(1)}" y="${yOff + (bump < 0 ? -9 : 20)}" text-anchor="middle" font-size="8" fill="#64748B" font-family="Inter,sans-serif">${esc(lbl)}</text>
+    </g>`;
+  }
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="overflow:visible">${s}</svg>`;
+}
+
+// ── ENFORCEMENT TRACKER SVG ────────────────────────────────────────
+function buildEnforcementTracker(arch, currentArticles) {
+  const runs = arch.runs || [];
+  if (runs.length < 1) return '';
+
+  // For each run, find consulting enforcement articles
+  const artMap = arch.articles || {};
+  const runData = runs.map(r => {
+    const urls = new Set(r.consulting_urls || []);
+    let count = 0, dollars = 0;
+    for (const url of urls) {
+      const a = artMap[url];
+      if (!a) continue;
+      const cat = (a.editions?.consulting?.category || a.category || '').toLowerCase();
+      if (/compliance|enforcement/.test(cat)) {
+        count++;
+        dollars += a.dollar_amount || a.editions?.consulting?.dollar_amount || 0;
+      }
+    }
+    return { label: r.run_date ? r.run_date.slice(5) : '', count, dollars };
+  });
+
+  // Also include current articles (not in archive run yet)
+  const currentEnf = currentArticles.filter(a => /compliance|enforcement/i.test(a.category || ''));
+  if (currentEnf.length > 0 && runs.length > 0) {
+    const lastRunDate = runs[runs.length - 1].run_date || '';
+    // Only add if current is different from last run
+    runData.push({ label: 'Now', count: currentEnf.length, dollars: currentEnf.reduce((s,a) => s + (a.dollar_amount||0), 0) });
+  }
+
+  if (!runData.length) return '';
+
+  const maxCount = Math.max(...runData.map(r => r.count), 1);
+  const totalDollars = runData.reduce((s, r) => s + r.dollars, 0);
+
+  const W = 480, H = 100, PAD_L = 20, PAD_R = 20, PAD_T = 10, PAD_B = 30;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const barW = Math.max(6, Math.min(30, chartW / runData.length - 4));
+  const step = chartW / runData.length;
+
+  let s = '';
+  // Bars
+  runData.forEach((r, i) => {
+    const barH = r.count ? (r.count / maxCount) * chartH : 2;
+    const x = PAD_L + i * step + (step - barW) / 2;
+    const y = PAD_T + chartH - barH;
+    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="#DC262688" rx="2"/>`;
+    // Count label
+    if (r.count > 0) s += `<text x="${(x + barW/2).toFixed(1)}" y="${(y - 3).toFixed(1)}" text-anchor="middle" font-size="9" fill="#DC2626" font-family="Inter,sans-serif" font-weight="600">${r.count}</text>`;
+    // X label
+    s += `<text x="${(x + barW/2).toFixed(1)}" y="${(H - 4).toFixed(1)}" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Inter,sans-serif">${esc(r.label)}</text>`;
+  });
+
+  // Cumulative $ line (if any dollar data)
+  if (totalDollars > 0) {
+    let cumul = 0;
+    const maxDol = runData.reduce((s, r) => s + r.dollars, 0);
+    const linePoints = runData.map((r, i) => {
+      cumul += r.dollars;
+      const x = PAD_L + i * step + step / 2;
+      const y = PAD_T + chartH - (maxDol > 0 ? (cumul / maxDol) * chartH : 0);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    s += `<polyline points="${linePoints.join(' ')}" fill="none" stroke="#D97706" stroke-width="1.5" stroke-dasharray="4 2"/>`;
+    // Total label
+    const lastPt = linePoints[linePoints.length - 1].split(',');
+    s += `<text x="${lastPt[0]}" y="${(parseFloat(lastPt[1])-4).toFixed(1)}" font-size="8" fill="#D97706" font-family="Inter,sans-serif">${esc(fmtDollars(totalDollars))}</text>`;
+  }
+
+  // Baseline
+  s += `<line x1="${PAD_L}" y1="${PAD_T + chartH}" x2="${W - PAD_R}" y2="${PAD_T + chartH}" stroke="#E2E8F0" stroke-width="1"/>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">${s}</svg>`;
+}
+
+// ── CATEGORY HEAT SVG ──────────────────────────────────────────────
+function buildCategoryHeat(arch, articles) {
+  const runs = arch.runs || [];
+  if (runs.length < 2) return '';
+  const artMap = arch.articles || {};
+
+  // Build set of top categories from current articles
+  const catCounts = {};
+  (articles || []).forEach(a => { if (a.category) catCounts[a.category] = (catCounts[a.category]||0) + 1; });
+  const topCats = Object.entries(catCounts).sort((a,b) => b[1]-a[1]).slice(0,8).map(e => e[0]);
+  if (!topCats.length) return '';
+
+  // For each run × category, count articles
+  const grid = runs.map(r => {
+    const urls = new Set(r.policy_urls || []);
+    const row = {};
+    topCats.forEach(c => { row[c] = 0; });
+    for (const url of urls) {
+      const a = artMap[url];
+      if (!a) continue;
+      const cat = a.editions?.policy?.category || a.category || '';
+      if (topCats.includes(cat)) row[cat]++;
+    }
+    return { label: r.run_date ? r.run_date.slice(5) : '', row };
+  });
+
+  const maxCell = Math.max(...grid.flatMap(r => topCats.map(c => r.row[c])), 1);
+  const CELL_W = 36, CELL_H = 18, LABEL_W = 155, PAD = 4;
+  const W = LABEL_W + grid.length * (CELL_W + PAD) + PAD;
+  const H = topCats.length * (CELL_H + PAD) + PAD + 20;
+
+  let s = '';
+  // Column headers (run dates)
+  grid.forEach((r, ci) => {
+    const x = LABEL_W + ci * (CELL_W + PAD) + CELL_W / 2;
+    s += `<text x="${x}" y="12" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Inter,sans-serif">${esc(r.label)}</text>`;
+  });
+
+  topCats.forEach((cat, ri) => {
+    const y = PAD + 20 + ri * (CELL_H + PAD);
+    // Row label (truncated)
+    const lbl = cat.length > 24 ? cat.slice(0,22) + '…' : cat;
+    s += `<text x="${LABEL_W - 6}" y="${y + CELL_H / 2 + 4}" text-anchor="end" font-size="9" fill="#475569" font-family="Inter,sans-serif">${esc(lbl)}</text>`;
+    // Cells
+    grid.forEach((r, ci) => {
+      const x = LABEL_W + ci * (CELL_W + PAD);
+      const n = r.row[cat] || 0;
+      const intensity = n / maxCell;
+      const alpha = Math.round(intensity * 200 + 30);  // 30–230
+      const fill = n === 0 ? '#F1F5F9' : `rgba(13,148,136,${(intensity * 0.75 + 0.1).toFixed(2)})`;
+      s += `<rect x="${x}" y="${y}" width="${CELL_W}" height="${CELL_H}" fill="${fill}" rx="2"/>`;
+      if (n > 0) s += `<text x="${x + CELL_W/2}" y="${y + CELL_H/2 + 4}" text-anchor="middle" font-size="9" fill="${intensity > 0.5 ? '#fff' : '#0F766E'}" font-family="Inter,sans-serif" font-weight="600">${n}</text>`;
+    });
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMinYMid meet">${s}</svg>`;
 }
 
 init();

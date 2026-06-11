@@ -182,6 +182,10 @@ def _fallback_article(a, categories):
         "stakeholder_balance":  None,
         "confidence_note":      "Not analyzed this run — classification unavailable.",
         "is_comment_period":    bool(a.get("comment_deadline")),
+        "dollar_amount":        None,
+        "affected_population":  None,
+        "affected_population_desc": None,
+        "action_deadline":      a.get("comment_deadline") or None,
     }
 
 
@@ -230,9 +234,62 @@ def _ensure_article_fields(a, categories):
     if not _str_ok(out.get("watch_for")):
         out["watch_for"] = None
 
+    # Quantitative fields — new; backfill cleanly if missing/invalid
+    if not isinstance(out.get("dollar_amount"), (int, float)):
+        out["dollar_amount"] = None
+    if not isinstance(out.get("affected_population"), (int, float)):
+        out["affected_population"] = None
+    if not _str_ok(out.get("affected_population_desc")):
+        out["affected_population_desc"] = None
+
+    # action_deadline: model-provided, or fall back to nearest raw date field
+    if not out.get("action_deadline"):
+        from datetime import date as _d
+        today = _d.today()
+        candidates = []
+        for field in ("comment_deadline", "effective_date"):
+            v = out.get(field)
+            if v and str(v) not in ("", "None", "null", "TBD"):
+                try:
+                    if _d.fromisoformat(str(v)[:10]) >= today:
+                        candidates.append(str(v)[:10])
+                except ValueError:
+                    pass
+        out["action_deadline"] = min(candidates) if candidates else None
+
     return out
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
+
+def _validate_dollar_amount(amount, title, snippet):
+    """Return amount if digits are verifiable in source text, else None.
+    Prevents the model from hallucinating dollar figures."""
+    if not isinstance(amount, (int, float)):
+        return None
+    source = ((title or "") + " " + (snippet or "")).lower()
+    found = []
+    for m in re.finditer(
+        r'\$\s*([\d,]+(?:\.\d+)?)\s*(billion|million|[bBmM](?!\w))?',
+        source, re.I
+    ):
+        try:
+            val = float(m.group(1).replace(",", ""))
+            mult = (m.group(2) or "").lower()
+            if mult.startswith("b"):
+                val *= 1_000_000_000
+            elif mult.startswith("m"):
+                val *= 1_000_000
+            found.append(val)
+        except ValueError:
+            pass
+    if not found:
+        return None  # no dollar amounts in source at all
+    # Accept if within 5% of any found amount
+    for sa in found:
+        if sa > 0 and abs(amount - sa) / sa < 0.05:
+            return amount
+    return None  # mismatch — model likely hallucinated
+
 def parse_json_response(raw_text):
     text = (raw_text or "").strip()
     if "```" in text:
@@ -702,7 +759,11 @@ Return ONLY a valid JSON array — no markdown, no preamble:
   "regulatory_stage": "<one of: NPRM | Final Rule | Interim Final Rule | Guidance | Enforcement Action | Court Ruling | Legislation | Advisory Opinion | Administrative Action | Recall | Drug/Device Approval>",
   "effective_date": "<YYYY-MM-DD if specified in the document, 'TBD' if announced but unconfirmed, null if not applicable>",
   "client_types": ["<subset of: Hospital/Health System, Managed Care/Payer, Physician/Group Practice, Life Sciences/Pharma, Medical Device, Post-Acute/LTC, Behavioral Health, Digital Health, All Providers>"],
-  "watch_for": "<{watch_for_desc}>"
+  "watch_for": "<{watch_for_desc}>",
+  "dollar_amount": <number (integer USD, no commas/symbols) or null — ONLY if an explicit dollar figure appears verbatim in the provided title or snippet>,
+  "affected_population": <integer or null — explicit count of patients/beneficiaries/enrollees stated in source>,
+  "affected_population_desc": "<short label e.g. 'Medicare beneficiaries', 'Medicaid enrollees' — null if population null>",
+  "action_deadline": "<YYYY-MM-DD — nearest date requiring action (comment_deadline > compliance date > effective_date) — null if none>"
 }}]
 
 ━━━ IMPORTANCE SCORE RUBRIC (0–100) ━━━
@@ -752,14 +813,16 @@ Low bar (score 18, urgency "routine"): Routine 510(k) clearance of a commodity b
 
 ━━━ QUALITY STANDARDS ━━━
 
-so_what must be SPECIFIC and NON-OBVIOUS. Reject:
-  ✗ "This is an important development for providers to monitor."
-  ✗ "Healthcare organizations should be aware of this change."
-Accept:
-  ✓ "This extends a pattern of OIG scrutiny of orthopedics co-management arrangements
+so_what must be SPECIFIC and NON-OBVIOUS, and BLUF (Bottom Line Up Front):
+  • First sentence is the conclusion — start with the impact/exposure, not setup.
+  ✗ REJECT throat-clearing openers: "This rule...", "CMS has announced...", "Following...", "As part of..."
+  ✗ REJECT: "This is an important development for providers to monitor."
+  ✗ REJECT: "Healthcare organizations should be aware of this change."
+  ✓ ACCEPT: "Providers face a mid-fiscal-year revenue recalculation..."
+  ✓ ACCEPT: "This extends a pattern of OIG scrutiny of orthopedics co-management arrangements
      — the third action in 18 months — suggesting the office is building toward a
      broader fraud alert or Special Fraud Alert in this space."
-  ✓ "The effective date falls mid-fiscal-year for most health systems, creating a
+  ✓ ACCEPT: "The effective date falls mid-fiscal-year for most health systems, creating a
      retroactive revenue impact that will show in Q3 earnings reports."
 
 confidence_note: use it liberally. 'Prospects unclear given committee dynamics' and
@@ -787,6 +850,20 @@ client_types — include ALL that are materially affected. Use exact strings fro
 effective_date — the date the rule/action TAKES EFFECT, not publication date.
   Most NPRMs: null (no effective date yet). Final Rules: check the document, usually 30-60 days after publication.
 
+dollar_amount — the FIRST explicit dollar figure in the provided title or snippet only.
+  Examples: "$56.5 million settlement" → 56500000, "$2.1B merger" → 2100000000, "$450K penalty" → 450000
+  STRICT: if no dollar figure appears verbatim in the title or snippet provided, set null.
+  Do not use external knowledge. Do not infer or estimate. Only extract; never fabricate.
+
+affected_population — explicit integer count of people affected, stated in the source.
+  Examples: "2.3 million enrollees" → 2300000, "700,000 beneficiaries" → 700000
+  Set null if no explicit count is stated.
+
+action_deadline — nearest date requiring a specific action by a stakeholder.
+  Priority order: comment_deadline > compliance deadline stated in text > effective_date.
+  If COMMENT_DEADLINE is provided in the input header, use that unless the snippet mentions
+  an earlier deadline. Format: YYYY-MM-DD. Set null if no deadline exists.
+
 If two articles in this batch cover the exact same event (same rule, same enforcement action, same approval), emit only the higher-quality record. Use its idx, the more specific headline, and the higher scores. Omit the duplicate from your output entirely.
 """
 
@@ -797,7 +874,8 @@ If two articles in this batch cover the exact same event (same rule, same enforc
             f"[{j}] TITLE: {a['title']}\n"
             f"SOURCE: {a['source_name']}\n"
             f"DATE: {a['published']}\n"
-            f"SNIPPET: {a['snippet'][:300]}"
+            + (f"COMMENT_DEADLINE: {a['comment_deadline']}\n" if a.get("comment_deadline") else "")
+            + f"SNIPPET: {a['snippet'][:300]}"
             for j, a in enumerate(batch)
         )
         MAX_ATTEMPTS = 4
@@ -820,6 +898,13 @@ If two articles in this batch cover the exact same event (same rule, same enforc
                         # Ensure implication mirrors now_what for frontend compat
                         if merged.get("now_what") and not merged.get("implication"):
                             merged["implication"] = merged["now_what"]
+                        # Validate dollar_amount against source text
+                        if merged.get("dollar_amount") is not None:
+                            merged["dollar_amount"] = _validate_dollar_amount(
+                                merged["dollar_amount"],
+                                merged.get("title", ""),
+                                merged.get("snippet", ""),
+                            )
                         classified.append(merged)
                 print(f"    ✓ Batch {batch_idx+1}/{n_batches} — {len(classified)} classified")
                 return batch_idx, classified
