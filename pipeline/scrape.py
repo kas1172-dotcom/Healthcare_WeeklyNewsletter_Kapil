@@ -323,51 +323,99 @@ def fetch_rss(name, urls_or_url, source_type, health_filter=False, date_filter=T
 
 # ── GOVERNMENT API FETCHERS ───────────────────────────────────────────────────
 
-def fetch_federal_register():
-    print("  Federal Register API...")
-    cutoff_dt = cutoff()
-    date_str  = cutoff_dt.strftime("%Y-%m-%d")
-    agency_qs = "&".join(f"agency_slugs[]={a}" for a in FR_AGENCIES)
+def _fetch_fr_page(agency_qs, date_str, page=1):
+    """Fetch one page of Federal Register results. Returns (results_list, total_pages)."""
     url = (
         f"https://www.federalregister.gov/api/v1/documents.json"
-        f"?per_page=100&order=newest&{agency_qs}"
+        f"?per_page=100&order=newest&page={page}&{agency_qs}"
         f"&conditions[publication_date][gte]={date_str}"
         f"&conditions[type][]=RULE&conditions[type][]=PRORULE&conditions[type][]=NOTICE"
         f"&fields[]=title&fields[]=abstract&fields[]=publication_date"
         f"&fields[]=html_url&fields[]=agencies&fields[]=type&fields[]=comments_close_on"
     )
+    r = get_url(url, timeout=20)
+    if r is None or r.status_code != 200:
+        return [], 0
+    data = r.json()
+    total_pages = (data.get("total_pages") or 1)
+    return data.get("results", []), total_pages
+
+
+def fetch_federal_register(verbose=False):
+    print("  Federal Register API...")
+    cutoff_dt = cutoff()
+    date_str  = cutoff_dt.strftime("%Y-%m-%d")
+    agency_qs = "&".join(f"agency_slugs[]={a}" for a in FR_AGENCIES)
+
+    # Fetch up to 3 pages to handle high-volume windows without hammering the API
+    all_raw = []
     try:
-        r = get_url(url, timeout=20)
-        r.raise_for_status()
-        items = []
-        for d in r.json().get("results", []):
-            tl = (d.get("title") or "").lower()
-            al = (d.get("abstract") or "").lower()
-            ag = [a.get("slug","") for a in (d.get("agencies") or [])]
-            if any(na in ag for na in NON_HEALTH_AGENCIES):
-                continue
-            if "veterans-affairs-department" in ag:
-                if not any(k in tl or k in al for k in VA_HEALTH_KW):
-                    continue
-            if not any(k in tl or k in al for k in HEALTH_KW):
-                continue
-            agency_name = (d.get("agencies") or [{}])[0].get("name","HHS")
-            items.append(make_item(
-                d.get("title",""),
-                d.get("html_url",""),
-                d.get("publication_date",""),
-                f"Federal Register — {agency_name}",
-                "https://www.federalregister.gov",
-                strip_html(d.get("abstract") or ""),
-                d.get("type",""),
-                d.get("comments_close_on",""),
-                "regulatory"
-            ))
-        print(f"    ✓ {len(items)} documents")
-        return items
+        results, total_pages = _fetch_fr_page(agency_qs, date_str, page=1)
+        all_raw.extend(results)
+        if verbose:
+            print(f"    [FR debug] page 1/{total_pages}: {len(results)} raw results")
+        for page in range(2, min(total_pages + 1, 4)):  # pages 2 and 3 only
+            results2, _ = _fetch_fr_page(agency_qs, date_str, page=page)
+            all_raw.extend(results2)
+            if verbose:
+                print(f"    [FR debug] page {page}/{total_pages}: {len(results2)} raw results")
     except Exception as e:
         print(f"    ✗ {e}")
         return []
+
+    if verbose:
+        print(f"    [FR debug] total raw: {len(all_raw)}")
+
+    items = []
+    dropped_non_health_agency = 0
+    dropped_va_keyword = 0
+    dropped_health_kw = 0
+    fr_agency_slugs = set(FR_AGENCIES)
+
+    for d in all_raw:
+        tl = (d.get("title") or "").lower()
+        al = (d.get("abstract") or "").lower()
+        ag = [a.get("slug", "") for a in (d.get("agencies") or [])]
+
+        # Hard-skip explicitly non-health agencies (shouldn't appear but guard anyway)
+        if any(na in ag for na in NON_HEALTH_AGENCIES):
+            dropped_non_health_agency += 1
+            continue
+
+        # For VA documents, require at least one health keyword
+        if "veterans-affairs-department" in ag:
+            if not any(k in tl or k in al for k in VA_HEALTH_KW):
+                dropped_va_keyword += 1
+                continue
+
+        # For documents from our explicitly listed health agencies (CMS, FDA, DEA, etc.)
+        # skip the broad HEALTH_KW filter — we already know they're health agencies.
+        # Only apply the keyword filter to documents from OTHER agencies that slipped
+        # through the agency_slugs filter (e.g. multi-agency notices).
+        is_explicit_health_agency = any(slug in fr_agency_slugs for slug in ag)
+        if not is_explicit_health_agency:
+            if not any(k in tl or k in al for k in HEALTH_KW):
+                dropped_health_kw += 1
+                continue
+
+        agency_name = (d.get("agencies") or [{}])[0].get("name", "HHS")
+        items.append(make_item(
+            d.get("title", ""),
+            d.get("html_url", ""),
+            d.get("publication_date", ""),
+            f"Federal Register — {agency_name}",
+            "https://www.federalregister.gov",
+            strip_html(d.get("abstract") or ""),
+            d.get("type", ""),
+            d.get("comments_close_on", ""),
+            "regulatory"
+        ))
+
+    if verbose:
+        print(f"    [FR debug] dropped: {dropped_non_health_agency} non-health agency, "
+              f"{dropped_va_keyword} VA keyword miss, {dropped_health_kw} non-agency health kw miss")
+    print(f"    ✓ {len(items)} documents (from {len(all_raw)} raw)")
+    return items
 
 def fetch_congress_bills():
     print("  Congress.gov — Bills (recent + key committees)...")
@@ -385,11 +433,17 @@ def fetch_congress_bills():
             title = b.get("title","")
             if not any(k in title.lower() for k in CONGRESS_KW):
                 continue
+            cong = b.get("congress","")
+            # Skip bills from before the 119th Congress (2025–present)
+            try:
+                if cong and int(str(cong)) < 119:
+                    continue
+            except (ValueError, TypeError):
+                pass
             sponsors = b.get("sponsors") or []
             sponsor  = sponsors[0].get("fullName","N/A") if sponsors else "N/A"
             action   = (b.get("latestAction") or {}).get("text","")
             btype    = (b.get("type") or "").lower()
-            cong     = b.get("congress","")
             num      = b.get("number","")
             pub_str  = (b.get("updateDate") or b.get("introducedDate") or "")[:10]
             items.append(make_item(
@@ -458,9 +512,15 @@ def fetch_bill_summaries():
             combined = title + " " + summary
             if not any(k in combined.lower() for k in CONGRESS_KW):
                 continue
+            cong    = bill.get("congress","")
+            # Skip summaries from before the 119th Congress
+            try:
+                if cong and int(str(cong)) < 119:
+                    continue
+            except (ValueError, TypeError):
+                pass
             pub_str = (s.get("updateDate") or s.get("actionDate") or "")[:10]
             btype   = (bill.get("type") or "").lower()
-            cong    = bill.get("congress","")
             num     = bill.get("number","")
             items.append(make_item(
                 title,
@@ -982,6 +1042,41 @@ def test_sources():
         except Exception as e:
             print(f"  {label:<24} {'✗ ERROR':<14} {str(e)[:24]}")
             fail += 1
+
+    # Federal Register filter diagnostic
+    print("\n  Federal Register filter diagnostic:")
+    try:
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+        date_str = (_dt.now(_tz.utc) - _td(days=DAYS_BACK)).strftime("%Y-%m-%d")
+        agency_qs = "&".join(f"agency_slugs[]={a}" for a in FR_AGENCIES)
+        results, total_pages = _fetch_fr_page(agency_qs, date_str, page=1)
+        print(f"  {'FR page 1':<24} {len(results)} raw results  ({total_pages} total page(s) available)")
+        if total_pages > 1:
+            print(f"  {'':24} ⚠ {total_pages - 1} additional page(s) exist — run scrape.py normally to fetch them")
+        fr_agency_slugs = set(FR_AGENCIES)
+        dropped_non = dropped_va = dropped_kw = 0
+        passed = 0
+        for d in results:
+            ag = [a.get("slug", "") for a in (d.get("agencies") or [])]
+            tl = (d.get("title") or "").lower()
+            al = (d.get("abstract") or "").lower()
+            if any(na in ag for na in NON_HEALTH_AGENCIES):
+                dropped_non += 1; continue
+            if "veterans-affairs-department" in ag:
+                if not any(k in tl or k in al for k in VA_HEALTH_KW):
+                    dropped_va += 1; continue
+            is_explicit = any(slug in fr_agency_slugs for slug in ag)
+            if not is_explicit and not any(k in tl or k in al for k in HEALTH_KW):
+                dropped_kw += 1; continue
+            passed += 1
+        print(f"  {'FR post-filter':<24} {passed} items pass")
+        if dropped_non or dropped_va or dropped_kw:
+            print(f"  {'FR dropped':<24} {dropped_non} non-health agency  "
+                  f"{dropped_va} VA keyword miss  {dropped_kw} non-agency kw miss")
+        ok += 1
+    except Exception as e:
+        print(f"  {'Federal Register':<24} ✗ {str(e)[:50]}")
+        fail += 1
 
     # API checks
     print("\n  API sources:")

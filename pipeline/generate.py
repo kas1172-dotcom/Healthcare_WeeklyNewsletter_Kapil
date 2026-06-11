@@ -27,7 +27,7 @@ import sys
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 import requests
@@ -43,6 +43,11 @@ ARCHIVE_FILE     = "newsletter_archive.json"
 # Older run records are pruned; their articles remain in the article dict for de-dup.
 # 26 runs ≈ 6 months. Override with env var ARCHIVE_MAX_RUNS.
 ARCHIVE_MAX_RUNS = int(os.environ.get("ARCHIVE_MAX_RUNS", "26"))
+
+# Articles from prior runs are carried forward ("persisted") into the current newsletter
+# if they meet urgency/deadline criteria and are within this many days of first_seen.
+# Deadline items (future comment_deadline or effective_date) persist regardless of window.
+PERSIST_DAYS = int(os.environ.get("PERSIST_DAYS", "30"))
 
 # Max articles classified per edition. Set well above typical weekly volume (~170 total)
 # so it effectively never truncates — the frontend triages via tiers/drawers, so we
@@ -60,7 +65,7 @@ POLICY_SPILLOVER_FROM_REG = 30
 CLASSIFY_BATCH        = int(os.environ.get("CLASSIFY_BATCH", "8"))
 CLASSIFY_MAX_TOKENS   = int(os.environ.get("CLASSIFY_MAX_TOKENS", "4000"))
 CLASSIFY_WORKERS      = int(os.environ.get("CLASSIFY_WORKERS", "1"))
-CLASSIFY_MIN_INTERVAL = float(os.environ.get("CLASSIFY_MIN_INTERVAL", "16"))  # seconds between API calls
+CLASSIFY_MIN_INTERVAL = float(os.environ.get("CLASSIFY_MIN_INTERVAL", "22"))  # seconds between API calls — raised from 16s; new fields add ~1k output tokens/batch, pushing past 10k/min at 16s
 
 # Proactive pacing shared across (any) workers so we don't burn a retry on every
 # batch. The 429 backoff in process_batch is the safety net on top of this.
@@ -214,6 +219,7 @@ def _ensure_article_fields(a, categories):
     if not isinstance(out.get("stakeholder_balance"), dict):
         out["stakeholder_balance"] = None
     out.setdefault("confidence_note", None)
+    out.setdefault("persisted", False)  # preserve True on carried-over articles
 
     if not _str_ok(out.get("regulatory_stage")):
         out["regulatory_stage"] = "Administrative Action"
@@ -347,15 +353,43 @@ def update_archive(archive, output, run_date):
     """
     now = datetime.now(timezone.utc).isoformat()
 
+    urgency_rank = {"urgent": 0, "important": 1, "routine": 2, "discard": 3}
     for edition in ("consulting", "policy"):
         for a in output.get(edition, {}).get("articles", []):
             url = a.get("url", "")
             if not url:
                 continue
             if url not in archive["articles"]:
-                archive["articles"][url] = {**a, "first_seen": now, "last_seen": now}
-            else:
-                archive["articles"][url]["last_seen"] = now
+                archive["articles"][url] = {
+                    "url": url,
+                    "title": a.get("title", ""),
+                    "snippet": a.get("snippet", ""),
+                    "source_name": a.get("source_name", ""),
+                    "source_url": a.get("source_url", ""),
+                    "source_type": a.get("source_type", ""),
+                    "published": a.get("published", ""),
+                    "comment_deadline": a.get("comment_deadline") or None,
+                    "effective_date": a.get("effective_date") or None,
+                    "first_seen": now,
+                    "last_seen": now,
+                    "urgency": a.get("urgency", "discard"),
+                    "editions": {},
+                }
+            rec = archive["articles"][url]
+            rec["last_seen"] = now
+            # Store full per-edition classification (overwritten each run so it stays fresh)
+            rec.setdefault("editions", {})[edition] = {
+                k: v for k, v in a.items() if k not in ("first_seen", "last_seen")
+            }
+            # Update top-level urgency to the best tier seen across editions
+            new_urg = a.get("urgency", "discard")
+            if urgency_rank.get(new_urg, 3) < urgency_rank.get(rec.get("urgency", "discard"), 3):
+                rec["urgency"] = new_urg
+            # Propagate deadline fields to top level so persistence logic can read them
+            if a.get("comment_deadline"):
+                rec["comment_deadline"] = a["comment_deadline"]
+            if a.get("effective_date"):
+                rec["effective_date"] = a["effective_date"]
 
     run_record = {
         "run_date":       run_date,
@@ -391,6 +425,100 @@ def save_archive(archive, path=ARCHIVE_FILE):
     n_articles = len(archive["articles"])
     n_runs     = len(archive["runs"])
     print(f"  ✓ Archive: {n_articles} unique articles across {n_runs} runs → {path}")
+
+
+def get_persisted_articles(archive, current_urls, edition, today_str):
+    """Return articles from prior runs that qualify for carry-forward.
+
+    Criteria (ALL must hold):
+      a) urgency urgent/important  OR  has a future comment_deadline/effective_date
+      b) first_seen within PERSIST_DAYS  OR  has a future deadline (deadline items
+         persist indefinitely until the deadline passes)
+      c) URL not already in the current scrape
+    """
+    from datetime import date as _date
+    today = _date.fromisoformat(today_str[:10])
+    cutoff = today - timedelta(days=PERSIST_DAYS)
+
+    url_key = f"{edition}_urls"
+    edition_urls: set = set()
+    for r in archive.get("runs", []):
+        edition_urls.update(r.get(url_key, []))
+
+    urgency_rank = {"urgent": 0, "important": 1, "routine": 2, "discard": 3}
+    persisted = []
+
+    for url, a in archive.get("articles", {}).items():
+        if url in current_urls:
+            continue
+        if url not in edition_urls:
+            continue  # never appeared in this edition
+
+        # Prefer edition-specific classification; fall back to top-level fields
+        edition_data = a.get("editions", {}).get(edition) or a
+        urgency = edition_data.get("urgency") or a.get("urgency", "discard")
+
+        # Check for future deadline
+        deadline = (
+            edition_data.get("comment_deadline") or
+            edition_data.get("effective_date") or
+            a.get("comment_deadline") or
+            a.get("effective_date")
+        )
+        has_future_deadline = False
+        if deadline and str(deadline) not in ("", "None", "null", "TBD"):
+            try:
+                dl = _date.fromisoformat(str(deadline)[:10])
+                has_future_deadline = dl >= today
+            except ValueError:
+                pass
+
+        # Check age
+        first_seen = (a.get("first_seen") or "")[:10]
+        within_window = False
+        if first_seen:
+            try:
+                within_window = _date.fromisoformat(first_seen) >= cutoff
+            except ValueError:
+                pass
+
+        tier_ok = urgency_rank.get(urgency, 3) <= 1  # urgent or important
+        if (tier_ok or has_future_deadline) and (within_window or has_future_deadline):
+            article = dict(edition_data)
+            # Ensure key metadata fields are present
+            for key in ("url", "title", "published", "source_name", "source_url",
+                        "comment_deadline", "effective_date"):
+                if not article.get(key):
+                    article[key] = a.get(key) or ""
+            article["persisted"] = True
+            article["first_seen"] = first_seen
+            persisted.append(article)
+
+    return persisted
+
+
+def reconcile_shared_urgency(consulting_articles, policy_articles):
+    """For articles in both editions, use the higher urgency tier in both.
+
+    Prevents the same article being urgent in consulting and discard in policy
+    (or vice versa), which looks inconsistent and buries high-signal items.
+    """
+    urgency_rank = {"urgent": 0, "important": 1, "routine": 2, "discard": 3}
+    c_by_url = {a.get("url", ""): a for a in consulting_articles if a.get("url")}
+    p_by_url = {a.get("url", ""): a for a in policy_articles   if a.get("url")}
+    shared = set(c_by_url) & set(p_by_url)
+    reconciled = 0
+    for url in shared:
+        c, p = c_by_url[url], p_by_url[url]
+        cu, pu = c.get("urgency", "routine"), p.get("urgency", "routine")
+        if urgency_rank.get(cu, 2) != urgency_rank.get(pu, 2):
+            best = cu if urgency_rank.get(cu, 2) < urgency_rank.get(pu, 2) else pu
+            c["urgency"] = best
+            p["urgency"] = best
+            reconciled += 1
+    if reconciled:
+        print(f"  ↺ Reconciled urgency for {reconciled} shared article(s)")
+    return consulting_articles, policy_articles
 
 
 # ── WHAT'S NEW ────────────────────────────────────────────────────────────────
@@ -498,6 +626,22 @@ Rules:
     else:
         stakeholder_schema = '  "stakeholder_balance": null,'
         stakeholder_guidance = ""
+
+    if edition == "policy":
+        policy_rulemaking_rules = """
+
+━━━ POLICY EDITION HARD RULES ━━━
+
+1. Major federal rulemaking is NEVER discard in the policy edition. This includes:
+   - Interim Final Rules, Proposed Rules (NPRMs), and Final Rules from CMS, FDA, or HHS
+   - Presidential executive orders touching healthcare coverage, Medicare, or Medicaid
+   If you would otherwise mark such an item as discard, upgrade it to routine (minimum).
+
+2. News coverage OF a major rule inherits the rule's significance. A news article covering
+   an IFR that would score 80+ is itself at minimum "important" — not "routine" or "discard."
+   Coverage items may score 5–10 points lower than the primary rule document, but not more."""
+    else:
+        policy_rulemaking_rules = ""
 
     if edition == "consulting":
         so_what_desc = (
@@ -620,7 +764,7 @@ Accept:
 
 confidence_note: use it liberally. 'Prospects unclear given committee dynamics' and
 'Insufficient information to assess enforcement trajectory' are professional, honest answers.
-Reserve null for items where the facts clearly determine the analysis.{stakeholder_guidance}
+Reserve null for items where the facts clearly determine the analysis.{stakeholder_guidance}{policy_rulemaking_rules}
 
 ━━━ FIELD DEFINITIONS ━━━
 
@@ -913,6 +1057,7 @@ def main():
 
     articles = raw.get("articles", [])
     week_of = datetime.now().strftime("%B %d, %Y")
+    run_date = datetime.now().strftime("%Y-%m-%d")
     scraped = raw.get("scraped_at", "")
 
     print(f"\n  Loaded {len(articles)} articles from {args.input}")
@@ -923,10 +1068,18 @@ def main():
     EDITORIAL_MODEL = args.model
     client = Anthropic(api_key=anthropic_api_key)
 
+    # Load archive early — needed for persistence merge after classification
+    print("\n[0/4] Loading archive...")
+    archive = load_archive(ARCHIVE_FILE)
+
     reg_pool = [a for a in articles if a.get("source_type") in ("regulatory", "both")][:MAX_ARTICLES_PER_EDITION]
     pol_pool = [a for a in articles if a.get("source_type") in ("policy", "both")]
     pol_urls = {a.get("url") for a in pol_pool}
-    pol_pool += [a for a in reg_pool if a.get("url") not in pol_urls][:POLICY_SPILLOVER_FROM_REG]
+    # Exclude 510(k) clearances from policy spillover — they are guaranteed policy discards
+    pol_pool += [
+        a for a in reg_pool
+        if a.get("url") not in pol_urls and a.get("doc_type") != "510(k)"
+    ][:POLICY_SPILLOVER_FROM_REG]
     pol_pool = pol_pool[:MAX_ARTICLES_PER_EDITION]
 
     print(f"\n  Consulting pool: {len(reg_pool)} articles")
@@ -960,6 +1113,25 @@ def main():
 
     print(f"\n  After filter: {len(consulting_articles)} consulting, {len(policy_articles)} policy articles")
 
+    # Reconcile urgency for articles that appear in both editions
+    consulting_articles, policy_articles = reconcile_shared_urgency(consulting_articles, policy_articles)
+
+    # Merge high-signal persisted articles from prior runs not in this scrape
+    c_urls = {a.get("url", "") for a in consulting_articles}
+    p_urls = {a.get("url", "") for a in policy_articles}
+    c_persisted = get_persisted_articles(archive, c_urls, "consulting", run_date)
+    p_persisted = get_persisted_articles(archive, p_urls, "policy", run_date)
+    if c_persisted:
+        print(f"  ↺ Carried forward {len(c_persisted)} persisted consulting article(s)")
+        consulting_articles = sorted(
+            consulting_articles + [_ensure_article_fields(a, CONSULTING_CATEGORIES) for a in c_persisted],
+            key=urgency_key)
+    if p_persisted:
+        print(f"  ↺ Carried forward {len(p_persisted)} persisted policy article(s)")
+        policy_articles = sorted(
+            policy_articles + [_ensure_article_fields(a, POLICY_CATEGORIES) for a in p_persisted],
+            key=urgency_key)
+
     print("\n[1.5/4] Grouping articles by topic...")
     consulting_articles = group_articles_by_topic(client, consulting_articles)
     policy_articles     = group_articles_by_topic(client, policy_articles)
@@ -972,10 +1144,8 @@ def main():
     consulting_ed = generate_editorial(client, consulting_articles, "consulting", week_of)
     policy_ed = generate_editorial(client, policy_articles, "policy", week_of)
 
-    # ── Archive: load before building output ──
-    print("\n[3.5/4] Loading archive...")
-    archive = load_archive(ARCHIVE_FILE)
-    run_date = datetime.now().strftime("%Y-%m-%d")
+    # ── Archive: already loaded at [0/4]; update with this run's results ──
+    print("\n[3.5/4] Updating archive...")
 
     output = {
         "generated_at": datetime.now(timezone.utc).isoformat(),

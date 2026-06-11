@@ -178,6 +178,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F7F6F3;color:#1A1A1A;l
 .card-watch-for{font-size:11px;color:#6D28D9;line-height:1.5;margin-top:4px;margin-bottom:4px;padding-left:2px}
 .card-watch-for::before{content:"⟳ Watch: ";font-weight:700;color:#7C3AED}
 
+/* ── ONGOING (persisted) BADGE ────────────────────────────────────── */
+.ongoing-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;white-space:nowrap;flex-shrink:0}
+
 /* ── WHAT TO WATCH PANEL ──────────────────────────────────────────── */
 .wtw-panel{background:#0C1A2E;border-bottom:1px solid #1E3A5F;padding:14px 0}
 .wtw-inner{max-width:1100px;margin:0 auto;padding:0 24px}
@@ -1045,6 +1048,7 @@ function buildFullCard(a, showCatTag) {
   const impactHtml = a.so_what ? `<div class="card-impact">${esc(a.so_what)}</div>` : '';
   const actionHtml = a.now_what ? `<div class="card-action"><span class="card-action-label">→</span>${esc(a.now_what)}</div>` : '';
   const summaryHtml = a.summary ? `<details class="card-details"><summary>Background</summary><p class="card-summary-detail">${esc(a.summary)}</p></details>` : '';
+  const ongoingBadge = a.persisted ? `<span class="ongoing-badge">Ongoing</span>` : '';
 
   let sbHtml = '';
   const sb = a.stakeholder_balance;
@@ -1066,7 +1070,7 @@ function buildFullCard(a, showCatTag) {
           <span class="source-pill"><a href="${esc(a.source_url||'#')}" target="_blank" rel="noopener">${esc((a.source_name||'').split('—')[0].trim())}</a></span>
           ${stageHtml}
           ${a.doc_type && a.doc_type !== a.regulatory_stage ? `<span class="doc-type-pill">${esc(a.doc_type)}</span>` : ''}
-          ${catTag}${pub}${effDateHtml}${score}
+          ${catTag}${ongoingBadge}${pub}${effDateHtml}${score}
         </div>
         <div class="card-headline"><a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.headline||a.title)}</a></div>
         ${clientTypesHtml}
@@ -1091,6 +1095,7 @@ function buildCompactCard(a, showCatTag) {
   const clientTypesHtml = (a.client_types && a.client_types.length > 0)
     ? `<div class="client-types" style="margin-top:4px">${a.client_types.map(t => `<span class="client-chip">${esc(CLIENT_TYPE_ABBR[t]||t)}</span>`).join('')}</div>` : '';
   const watchForHtml = a.watch_for ? `<div class="card-watch-for">${esc(a.watch_for)}</div>` : '';
+  const ongoingBadgeC = a.persisted ? `<span class="ongoing-badge" style="margin-left:4px">Ongoing</span>` : '';
 
   let sbHtml = '';
   const sb = a.stakeholder_balance;
@@ -1118,7 +1123,7 @@ function buildCompactCard(a, showCatTag) {
       <div class="compact-body">
         <div class="compact-headline">
           <a href="${esc(a.url||'#')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(a.headline||a.title)}</a>
-          ${stageHtml}${pub}
+          ${stageHtml}${ongoingBadgeC}${pub}
         </div>
         ${teaser ? `<div class="compact-teaser">→ ${esc(teaser)}</div>` : ''}
         ${urg==='urgent' ? '<span class="urgency-badge urgent" style="font-size:9px;margin-left:4px">Urgent</span>' : urg==='important' ? '<span class="urgency-badge important" style="font-size:9px;margin-left:4px">Important</span>' : ''}
