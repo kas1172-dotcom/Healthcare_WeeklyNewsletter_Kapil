@@ -1,6 +1,6 @@
 # Healthcare Regulatory & Policy Monitor — Automated Weekly Newsletter
 # =======================================================
-# This runs pipeline/scrape.py + pipeline/generate.py every Monday at 8am ET on GitHub's
+# This runs pipeline/scrape.py + pipeline/generate.py Mondays at 13:00 UTC on GitHub's
 # servers, then commits the result. Your site updates with zero effort.
 #
 # SETUP (one time):
@@ -23,6 +23,10 @@ on:
   schedule:
     # 13:00 UTC every Monday = 8am EST / 9am EDT. GitHub cron is always UTC.
     - cron: '0 13 * * 1'
+
+concurrency:
+  group: weekly-newsletter-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write       # allows the action to commit newsletter_data.json
@@ -73,12 +77,12 @@ jobs:
           git config user.email "actions@github.com"
           # Ensure we have the latest remote changes to avoid non-fast-forward errors
           BRANCH=${GITHUB_REF#refs/heads/}
-          git fetch origin $BRANCH
-          git pull --rebase origin $BRANCH || true
           git add newsletter_data.json newsletter_archive.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Weekly newsletter update $(date +%Y-%m-%d)"
-            git push origin HEAD:$BRANCH --force-with-lease
+            git fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH"
+            git push origin "HEAD:$BRANCH"
           fi

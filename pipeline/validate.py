@@ -35,7 +35,14 @@ URL_RE = re.compile(r"^https?://")
 
 
 def is_valid_url(value):
-    return isinstance(value, str) and URL_RE.match(value)
+    if not isinstance(value, str) or any(ch.isspace() for ch in value):
+        return False
+    try:
+        parsed = urlparse(value)
+        return (parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+                and parsed.username is None and parsed.password is None)
+    except ValueError:
+        return False
 
 
 def load_json(path):

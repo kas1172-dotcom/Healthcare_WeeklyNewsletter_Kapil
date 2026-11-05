@@ -133,3 +133,7 @@ Open `index.html` directly in a browser to preview the result.
 | Disable auto-push | `python pipeline/generate.py --no-push` |
 | Archive retention (runs kept) | `pipeline/generate.py` → `ARCHIVE_MAX_RUNS` (or env var) |
 | Max articles classified per edition | `pipeline/generate.py` → `MAX_ARTICLES_PER_EDITION` (or env var) |
+
+## Verification and publishing
+
+Run `python -m unittest discover -s tests` for offline validation tests. These checks do not use API keys or make model calls. The scheduled generation job validates output before publishing, serializes concurrent runs, and uses a normal fast-forward push after rebasing. Conflicts stop publication rather than overwriting another change. The schedule is 13:00 UTC Mondays (8 a.m. Eastern Standard Time / 9 a.m. Eastern Daylight Time).
